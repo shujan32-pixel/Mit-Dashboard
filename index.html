@@ -918,11 +918,11 @@ function toggleTimer() {
         document.getElementById('play-btn').textContent = '▶';
         if (currentMode === 'focus') {
           logSession(MODES[currentMode].mins);
-          sendNotification('Fokus-session færdig! 🎉', `${MODES.focus.mins} minutter klaret — tag en velfortjent pause.`);
+          setTimeout(() => sendNotification('Fokus-session færdig! 🎉', `${MODES.focus.mins} minutter klaret — tag en velfortjent pause.`), 300);
         } else if (currentMode === 'short') {
-          sendNotification('Pause slut ⏰', 'Klar til endnu en fokus-session?');
+          setTimeout(() => sendNotification('Pause slut ⏰', 'Klar til endnu en fokus-session?'), 300);
         } else {
-          sendNotification('Lang pause slut ⏰', 'Du er klar til at fortsætte!');
+          setTimeout(() => sendNotification('Lang pause slut ⏰', 'Du er klar til at fortsætte!'), 300);
         }
         remainingSeconds = totalSeconds;
         updateDisplay();
@@ -948,7 +948,10 @@ function stopTimer() {
 function skipTimer() {
   stopTimer();
   const elapsed = Math.round((totalSeconds - remainingSeconds) / 60);
-  if (currentMode === 'focus' && elapsed >= 1) logSession(elapsed);
+  if (currentMode === 'focus' && elapsed >= 1) {
+    logSession(elapsed);
+    setTimeout(() => sendNotification('Fokus-session gemt! ✅', `${elapsed} minutter registreret.`), 300);
+  }
   remainingSeconds = totalSeconds;
   updateDisplay();
   updateRing();
