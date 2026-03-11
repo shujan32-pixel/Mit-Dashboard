@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mit Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --bg: #0a0a0b;
@@ -30,7 +31,6 @@
     overflow-x: hidden;
   }
 
-  /* ── NOISE OVERLAY ── */
   body::before {
     content: '';
     position: fixed; inset: 0;
@@ -40,9 +40,37 @@
     opacity: 0.4;
   }
 
-  /* ── LOGIN SCREEN ── */
-  #login-screen {
+  /* ── LOADING ── */
+  #loading-screen {
     display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    display: none;
     align-items: center;
     justify-content: center;
     min-height: 100vh;
@@ -73,9 +101,7 @@
     margin-bottom: 3rem;
   }
 
-  .field {
-    margin-bottom: 1rem;
-  }
+  .field { margin-bottom: 1rem; }
 
   .field label {
     display: block;
@@ -119,10 +145,12 @@
     padding: 0.85rem;
     margin-top: 0.5rem;
     transition: opacity 0.2s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
   }
 
   .login-btn:hover { opacity: 0.85; }
   .login-btn:active { transform: scale(0.98); }
+  .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .login-error {
     color: var(--danger);
@@ -133,19 +161,45 @@
     min-height: 1rem;
   }
 
-  .login-hint {
-    color: var(--muted);
+  .login-divider {
+    display: flex; align-items: center; gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .login-divider::before,
+  .login-divider::after {
+    content: ''; flex: 1;
+    height: 1px; background: var(--border);
+  }
+
+  .login-divider span {
     font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .register-link {
     text-align: center;
-    margin-top: 2rem;
-    letter-spacing: 0.05em;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 1.5rem;
+  }
+
+  .register-link button {
+    background: none; border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    text-decoration: underline;
   }
 
   /* ── APP ── */
   #app { display: none; min-height: 100vh; }
 
-  /* ── SIDEBAR ── */
   .sidebar {
     position: fixed;
     left: 0; top: 0; bottom: 0;
@@ -169,10 +223,7 @@
 
   .sidebar-logo span { color: var(--accent); }
 
-  .nav-section {
-    padding: 0 1rem;
-    flex: 1;
-  }
+  .nav-section { padding: 0 1rem; flex: 1; }
 
   .nav-label {
     font-family: 'DM Mono', monospace;
@@ -204,7 +255,7 @@
 
   .nav-item:hover { background: var(--surface2); color: var(--text); }
   .nav-item.active { background: rgba(124,109,250,0.15); color: var(--accent); }
-
+  .nav-item:disabled { opacity: 0.4; cursor: default; }
   .nav-item .icon { font-size: 1rem; width: 1.2rem; text-align: center; }
 
   .nav-badge {
@@ -227,7 +278,7 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.5rem 0.5rem;
+    padding: 0.5rem;
     margin-bottom: 0.5rem;
   }
 
@@ -242,7 +293,7 @@
 
   .user-info { flex: 1; min-width: 0; }
   .user-name { font-size: 0.82rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .user-role { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); }
+  .user-email { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .logout-btn {
     width: 100%;
@@ -261,7 +312,6 @@
 
   .logout-btn:hover { border-color: var(--danger); color: var(--danger); }
 
-  /* ── MAIN CONTENT ── */
   .main {
     margin-left: 220px;
     min-height: 100vh;
@@ -271,10 +321,7 @@
   .page { display: none; animation: fadeUp 0.4s ease both; }
   .page.active { display: block; }
 
-  /* ── HOME PAGE ── */
-  .page-header {
-    margin-bottom: 2.5rem;
-  }
+  .page-header { margin-bottom: 2.5rem; }
 
   .greeting {
     font-size: 2rem;
@@ -373,144 +420,65 @@
     overflow: hidden;
   }
 
-  .app-card:hover {
-    border-color: var(--border2);
-    background: var(--surface2);
-    transform: translateY(-2px);
-  }
-
+  .app-card:hover { border-color: var(--border2); background: var(--surface2); transform: translateY(-2px); }
   .app-card.coming-soon { opacity: 0.45; cursor: default; }
   .app-card.coming-soon:hover { transform: none; }
 
-  .app-icon {
-    font-size: 1.8rem;
-    margin-bottom: 1rem;
-    display: block;
-  }
-
-  .app-name {
-    font-size: 0.92rem;
-    font-weight: 700;
-    margin-bottom: 0.25rem;
-  }
-
-  .app-desc {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.68rem;
-    color: var(--muted);
-    line-height: 1.5;
-  }
+  .app-icon { font-size: 1.8rem; margin-bottom: 1rem; display: block; }
+  .app-name { font-size: 0.92rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .app-desc { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); line-height: 1.5; }
 
   .soon-tag {
-    position: absolute;
-    top: 1rem; right: 1rem;
+    position: absolute; top: 1rem; right: 1rem;
     font-family: 'DM Mono', monospace;
-    font-size: 0.6rem;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 2px 6px;
-    text-transform: uppercase;
+    font-size: 0.6rem; letter-spacing: 0.1em; color: var(--muted);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 6px; text-transform: uppercase;
   }
 
-  /* ── FOCUS TIMER ── */
-  .timer-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 1rem;
-  }
-
-  .timer-display {
-    position: relative;
-    margin-bottom: 2.5rem;
-  }
+  /* ── TIMER ── */
+  .timer-wrapper { display: flex; flex-direction: column; align-items: center; padding-top: 1rem; }
 
   .timer-ring-svg { transform: rotate(-90deg); }
-
-  .timer-ring-bg {
-    fill: none;
-    stroke: var(--surface2);
-    stroke-width: 6;
-  }
-
-  .timer-ring-progress {
-    fill: none;
-    stroke: var(--accent);
-    stroke-width: 6;
-    stroke-linecap: round;
-    transition: stroke-dashoffset 1s linear, stroke 0.3s;
-  }
+  .timer-ring-bg { fill: none; stroke: var(--surface2); stroke-width: 6; }
+  .timer-ring-progress { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
 
   .timer-text-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
 
+  .timer-display-wrap { position: relative; margin-bottom: 2.5rem; }
+
   .timer-time {
-    font-size: 3.5rem;
-    font-weight: 800;
+    font-size: 3.5rem; font-weight: 800;
     letter-spacing: -0.04em;
-    font-family: 'DM Mono', monospace;
-    line-height: 1;
+    font-family: 'DM Mono', monospace; line-height: 1;
   }
 
   .timer-mode-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-top: 0.4rem;
+    font-family: 'DM Mono', monospace; font-size: 0.7rem;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-top: 0.4rem;
   }
 
-  .timer-modes {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 2rem;
-  }
+  .timer-modes { display: flex; gap: 0.5rem; margin-bottom: 2rem; }
 
   .mode-btn {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--muted);
-    cursor: pointer;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    letter-spacing: 0.08em;
-    padding: 0.45rem 0.9rem;
-    text-transform: uppercase;
-    transition: all 0.2s;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--muted); cursor: pointer;
+    font-family: 'DM Mono', monospace; font-size: 0.72rem;
+    letter-spacing: 0.08em; padding: 0.45rem 0.9rem;
+    text-transform: uppercase; transition: all 0.2s;
   }
 
-  .mode-btn.active {
-    background: rgba(124,109,250,0.15);
-    border-color: var(--accent);
-    color: var(--accent);
-  }
+  .mode-btn.active { background: rgba(124,109,250,0.15); border-color: var(--accent); color: var(--accent); }
 
-  .timer-controls {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    margin-bottom: 3rem;
-  }
+  .timer-controls { display: flex; gap: 1rem; align-items: center; margin-bottom: 3rem; }
 
   .ctrl-btn {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 1rem;
-    width: 48px; height: 48px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 50%; color: var(--muted); cursor: pointer;
+    font-size: 1rem; width: 48px; height: 48px;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.2s;
   }
@@ -518,100 +486,28 @@
   .ctrl-btn:hover { border-color: var(--border2); color: var(--text); }
 
   .play-btn {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-    width: 64px; height: 64px;
-    font-size: 1.4rem;
-    border-radius: 50%;
-    border: none;
-    cursor: pointer;
+    background: var(--accent); border: none; color: #fff;
+    width: 64px; height: 64px; font-size: 1.4rem;
+    border-radius: 50%; cursor: pointer;
     transition: opacity 0.2s, transform 0.1s;
   }
 
   .play-btn:hover { opacity: 0.85; }
   .play-btn:active { transform: scale(0.95); }
 
-  .sessions-log {
-    width: 100%;
-    max-width: 480px;
-  }
+  .sessions-log { width: 100%; max-width: 480px; }
 
   .session-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display: flex; align-items: center; justify-content: space-between;
     padding: 0.75rem 1rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    margin-bottom: 0.5rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; margin-bottom: 0.5rem;
     font-family: 'DM Mono', monospace;
   }
 
   .session-date { font-size: 0.72rem; color: var(--muted); }
   .session-dur { font-size: 0.82rem; color: var(--accent2); font-weight: 500; }
   .session-mode { font-size: 0.68rem; color: var(--muted); }
-
-  /* ── SETTINGS ── */
-  .settings-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    max-width: 560px;
-  }
-
-  .settings-section h3 {
-    font-size: 0.9rem;
-    font-weight: 700;
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .setting-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-  }
-
-  .setting-row:last-child { margin-bottom: 0; }
-
-  .setting-label { font-size: 0.85rem; }
-  .setting-sub { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
-
-  .setting-input {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.82rem;
-    padding: 0.4rem 0.7rem;
-    width: 80px;
-    text-align: center;
-    outline: none;
-  }
-
-  .setting-input:focus { border-color: var(--accent); }
-
-  .save-btn {
-    background: var(--accent);
-    border: none;
-    border-radius: 6px;
-    color: #fff;
-    cursor: pointer;
-    font-family: 'Syne', sans-serif;
-    font-size: 0.82rem;
-    font-weight: 700;
-    padding: 0.5rem 1.25rem;
-    transition: opacity 0.2s;
-  }
-
-  .save-btn:hover { opacity: 0.85; }
 
   /* ── ANIMATIONS ── */
   @keyframes fadeUp {
@@ -628,35 +524,64 @@
     .user-row { justify-content: center; }
     .main { margin-left: 60px; padding: 1.5rem; }
     .stats-row { grid-template-columns: 1fr; }
-    .timer-time { font-size: 2.5rem; }
   }
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════ LOGIN ═══════════════════════════════ -->
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-text">Forbinder...</div>
+</div>
+
+<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">Mit<span>.</span>Dashboard</div>
     <div class="login-sub">Personligt arbejdsrum</div>
 
-    <div class="field">
-      <label>Brugernavn</label>
-      <input type="text" id="username" placeholder="dit navn" autocomplete="off">
+    <!-- LOGIN FORM -->
+    <div id="form-login">
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="login-email" placeholder="din@email.dk" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Adgangskode</label>
+        <input type="password" id="login-password" placeholder="••••••••">
+      </div>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">Log ind →</button>
+      <div class="login-error" id="login-error"></div>
+      <div class="register-link">
+        Har du ikke en konto?
+        <button onclick="showRegister()">Opret konto</button>
+      </div>
     </div>
-    <div class="field">
-      <label>Adgangskode</label>
-      <input type="password" id="password" placeholder="••••••••">
+
+    <!-- REGISTER FORM -->
+    <div id="form-register" style="display:none">
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="reg-email" placeholder="din@email.dk">
+      </div>
+      <div class="field">
+        <label>Adgangskode</label>
+        <input type="password" id="reg-password" placeholder="Mindst 6 tegn">
+      </div>
+      <button class="login-btn" id="reg-btn" onclick="doRegister()">Opret konto →</button>
+      <div class="login-error" id="reg-error"></div>
+      <div class="register-link">
+        Har du allerede en konto?
+        <button onclick="showLogin()">Log ind</button>
+      </div>
     </div>
-    <button class="login-btn" onclick="login()">Log ind →</button>
-    <div class="login-error" id="login-error"></div>
-    <div class="login-hint">Demo: bruger <strong style="color:var(--text)">admin</strong> / kode <strong style="color:var(--text)">1234</strong></div>
+
   </div>
 </div>
 
-<!-- ═══════════════════════════════ APP ════════════════════════════════ -->
+<!-- APP -->
 <div id="app">
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-logo">Mit<span>.</span>DB</div>
     <nav class="nav-section">
@@ -668,37 +593,35 @@
       <button class="nav-item" onclick="showPage('timer', this)">
         <span class="icon">◉</span><span>Focus Timer</span>
       </button>
-      <button class="nav-item" onclick="showPage('budget', this)" style="opacity:0.45;cursor:default" disabled>
+      <button class="nav-item" disabled>
         <span class="icon">◈</span><span>Budget</span>
         <span class="nav-badge">Snart</span>
       </button>
-      <button class="nav-item" onclick="showPage('notes', this)" style="opacity:0.45;cursor:default" disabled>
+      <button class="nav-item" disabled>
         <span class="icon">◧</span><span>Noter</span>
         <span class="nav-badge">Snart</span>
       </button>
     </nav>
     <div class="sidebar-footer">
       <div class="user-row">
-        <div class="avatar" id="sidebar-avatar">A</div>
+        <div class="avatar" id="sidebar-avatar">?</div>
         <div class="user-info">
-          <div class="user-name" id="sidebar-name">Admin</div>
-          <div class="user-role">Personlig</div>
+          <div class="user-name" id="sidebar-name">—</div>
+          <div class="user-email" id="sidebar-email">—</div>
         </div>
       </div>
-      <button class="logout-btn" onclick="logout()">Log ud</button>
+      <button class="logout-btn" onclick="doLogout()">Log ud</button>
     </div>
   </aside>
 
-  <!-- MAIN -->
   <main class="main">
 
     <!-- HOME -->
     <div class="page active" id="page-home">
       <div class="page-header">
-        <div class="greeting">God dag, <span class="name" id="greeting-name">Admin</span></div>
+        <div class="greeting">God dag, <span class="name" id="greeting-name">—</span></div>
         <div class="greeting-sub" id="greeting-date">—</div>
       </div>
-
       <div class="stats-row">
         <div class="stat-card">
           <div class="stat-label">Focus-sessioner i dag</div>
@@ -716,10 +639,9 @@
           <div class="stat-unit">dage i træk</div>
         </div>
       </div>
-
       <div class="section-title">Dine apps</div>
       <div class="apps-grid">
-        <div class="app-card" onclick="showPage('timer', document.querySelector('[onclick*=timer]'))">
+        <div class="app-card" onclick="showPage('timer', document.querySelector('.nav-item:nth-child(3)'))">
           <span class="app-icon">◉</span>
           <div class="app-name">Focus Timer</div>
           <div class="app-desc">Pomodoro-baseret fokustimer med sessionslog</div>
@@ -751,34 +673,29 @@
         <div class="greeting" style="font-size:1.5rem">Focus <span class="name">Timer</span></div>
         <div class="greeting-sub">Pomodoro · dyb fokus · pauser</div>
       </div>
-
       <div class="timer-wrapper">
         <div class="timer-modes">
           <button class="mode-btn active" onclick="setMode('focus', this)">Focus</button>
           <button class="mode-btn" onclick="setMode('short', this)">Kort pause</button>
           <button class="mode-btn" onclick="setMode('long', this)">Lang pause</button>
         </div>
-
-        <div class="timer-display">
+        <div class="timer-display-wrap">
           <svg class="timer-ring-svg" width="260" height="260" viewBox="0 0 260 260">
             <circle class="timer-ring-bg" cx="130" cy="130" r="115"/>
             <circle class="timer-ring-progress" id="ring" cx="130" cy="130" r="115"
-              stroke-dasharray="722.6"
-              stroke-dashoffset="0"/>
+              stroke-dasharray="722.6" stroke-dashoffset="0"/>
           </svg>
           <div class="timer-text-overlay">
             <div class="timer-time" id="timer-display">25:00</div>
             <div class="timer-mode-label" id="mode-label">FOKUSTID</div>
           </div>
         </div>
-
         <div class="timer-controls">
-          <button class="ctrl-btn" onclick="resetTimer()" title="Nulstil">↺</button>
+          <button class="ctrl-btn" onclick="resetTimer()">↺</button>
           <button class="play-btn" id="play-btn" onclick="toggleTimer()">▶</button>
-          <button class="ctrl-btn" onclick="skipTimer()" title="Spring over">⏭</button>
+          <button class="ctrl-btn" onclick="skipTimer()">⏭</button>
         </div>
-
-        <div class="sessions-log" id="sessions-log">
+        <div class="sessions-log">
           <div class="section-title">Dagens sessioner</div>
           <div id="session-list"></div>
           <div id="no-sessions" style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);text-align:center;padding:1.5rem 0;">
@@ -792,66 +709,124 @@
 </div>
 
 <script>
-// ── AUTH ──────────────────────────────────────────────────────────────
-const USERS = { admin: '1234' };
+// ── SUPABASE INIT ─────────────────────────────────────────────────
+const SUPABASE_URL = 'https://tgtvloytglyxaenpfsus.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRndHZsb3l0Z2x5eGFlbnBmc3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNTY2ODMsImV4cCI6MjA4ODgzMjY4M30.NsgDjbwqRzKV-OG-L74ycljtforovq9qYLxOBPiqb9s';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-function login() {
-  const u = document.getElementById('username').value.trim();
-  const p = document.getElementById('password').value;
-  const err = document.getElementById('login-error');
-
-  if (USERS[u] && USERS[u] === p) {
-    err.textContent = '';
-    sessionStorage.setItem('user', u);
-    startApp(u);
+// ── BOOT ──────────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    startApp(session.user);
   } else {
-    err.textContent = 'Forkert brugernavn eller adgangskode.';
-    document.getElementById('password').value = '';
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+  }
+});
+
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN' && session) {
+    startApp(session.user);
+  } else if (event === 'SIGNED_OUT') {
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+  }
+});
+
+// ── AUTH ──────────────────────────────────────────────────────────
+async function doLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const btn      = document.getElementById('login-btn');
+  const err      = document.getElementById('login-error');
+
+  err.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Logger ind...';
+
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    err.textContent = 'Forkert e-mail eller adgangskode.';
+    btn.disabled = false;
+    btn.textContent = 'Log ind →';
   }
 }
 
-document.getElementById('password').addEventListener('keydown', e => {
-  if (e.key === 'Enter') login();
-});
-document.getElementById('username').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('password').focus();
-});
+async function doRegister() {
+  const email    = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const btn      = document.getElementById('reg-btn');
+  const err      = document.getElementById('reg-error');
 
-function logout() {
-  sessionStorage.removeItem('user');
-  stopTimer();
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('username').value = '';
-  document.getElementById('password').value = '';
+  err.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Opretter...';
+
+  const { error } = await sb.auth.signUp({ email, password });
+
+  if (error) {
+    err.textContent = error.message;
+    btn.disabled = false;
+    btn.textContent = 'Opret konto →';
+  } else {
+    err.style.color = 'var(--accent2)';
+    err.textContent = 'Tjek din e-mail og klik på bekræftelseslinket!';
+    btn.disabled = false;
+    btn.textContent = 'Opret konto →';
+  }
 }
 
-function startApp(username) {
+async function doLogout() {
+  stopTimer();
+  await sb.auth.signOut();
+}
+
+function showRegister() {
+  document.getElementById('form-login').style.display = 'none';
+  document.getElementById('form-register').style.display = 'block';
+}
+
+function showLogin() {
+  document.getElementById('form-register').style.display = 'none';
+  document.getElementById('form-login').style.display = 'block';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const regVisible = document.getElementById('form-register').style.display !== 'none';
+    if (regVisible) doRegister(); else doLogin();
+  }
+});
+
+// ── START APP ─────────────────────────────────────────────────────
+function startApp(user) {
+  document.getElementById('loading-screen').style.display = 'none';
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
 
-  const display = username.charAt(0).toUpperCase() + username.slice(1);
-  document.getElementById('greeting-name').textContent = display;
-  document.getElementById('sidebar-name').textContent = display;
+  const email   = user.email || '';
+  const name    = email.split('@')[0];
+  const display = name.charAt(0).toUpperCase() + name.slice(1);
+
+  document.getElementById('greeting-name').textContent  = display;
+  document.getElementById('sidebar-name').textContent   = display;
+  document.getElementById('sidebar-email').textContent  = email;
   document.getElementById('sidebar-avatar').textContent = display.charAt(0).toUpperCase();
 
-  const now = new Date();
-  const days = ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
+  const now    = new Date();
+  const days   = ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
   const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
   document.getElementById('greeting-date').textContent =
     `${days[now.getDay()]} · ${now.getDate()}. ${months[now.getMonth()]} ${now.getFullYear()}`;
 
+  currentUserId = user.id;
   loadSessions();
-  updateStats();
 }
 
-// Auto-login if session exists
-window.addEventListener('load', () => {
-  const u = sessionStorage.getItem('user');
-  if (u && USERS[u]) startApp(u);
-});
-
-// ── NAVIGATION ────────────────────────────────────────────────────────
+// ── NAVIGATION ────────────────────────────────────────────────────
 function showPage(id, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -859,21 +834,23 @@ function showPage(id, btn) {
   if (btn) btn.classList.add('active');
 }
 
-// ── TIMER ─────────────────────────────────────────────────────────────
+// ── TIMER ─────────────────────────────────────────────────────────
 const MODES = {
   focus: { label: 'FOKUSTID',   mins: 25, color: '#7c6dfa' },
   short: { label: 'KORT PAUSE', mins: 5,  color: '#4ade80' },
   long:  { label: 'LANG PAUSE', mins: 15, color: '#f97316' }
 };
 
+const CIRCUMFERENCE = 722.6;
 let currentMode = 'focus';
 let totalSeconds = 25 * 60;
 let remainingSeconds = totalSeconds;
 let timerInterval = null;
 let isRunning = false;
 let sessions = [];
+let currentUserId = null;
 
-const CIRCUMFERENCE = 2 * Math.PI * 115; // 722.6
+document.getElementById('ring').style.stroke = MODES['focus'].color;
 
 function setMode(mode, btn) {
   if (isRunning) return;
@@ -897,8 +874,7 @@ function updateDisplay() {
 
 function updateRing() {
   const pct = remainingSeconds / totalSeconds;
-  const offset = CIRCUMFERENCE * (1 - pct);
-  document.getElementById('ring').style.strokeDashoffset = offset;
+  document.getElementById('ring').style.strokeDashoffset = CIRCUMFERENCE * (1 - pct);
 }
 
 function toggleTimer() {
@@ -917,13 +893,10 @@ function toggleTimer() {
         clearInterval(timerInterval);
         isRunning = false;
         document.getElementById('play-btn').textContent = '▶';
-        if (currentMode === 'focus') {
-          logSession(MODES[currentMode].mins);
-        }
+        if (currentMode === 'focus') logSession(MODES[currentMode].mins);
         remainingSeconds = totalSeconds;
         updateDisplay();
         updateRing();
-        try { new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAA...').play(); } catch(e){}
       }
     }, 1000);
   }
@@ -944,35 +917,46 @@ function stopTimer() {
 
 function skipTimer() {
   stopTimer();
-  if (currentMode === 'focus') {
-    const elapsed = Math.round((totalSeconds - remainingSeconds) / 60);
-    if (elapsed >= 1) logSession(elapsed);
-  }
+  const elapsed = Math.round((totalSeconds - remainingSeconds) / 60);
+  if (currentMode === 'focus' && elapsed >= 1) logSession(elapsed);
   remainingSeconds = totalSeconds;
   updateDisplay();
   updateRing();
 }
 
-// ── SESSIONS ──────────────────────────────────────────────────────────
-function loadSessions() {
-  const today = new Date().toDateString();
-  const stored = localStorage.getItem('sessions_' + today);
-  sessions = stored ? JSON.parse(stored) : [];
-  renderSessions();
+// ── SESSIONS (Supabase) ───────────────────────────────────────────
+async function loadSessions() {
+  if (!currentUserId) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  const { data, error } = await sb
+    .from('focus_sessions')
+    .select('*')
+    .eq('user_id', currentUserId)
+    .gte('created_at', today + 'T00:00:00')
+    .order('created_at', { ascending: false });
+
+  if (!error && data) {
+    sessions = data;
+    renderSessions();
+    updateStats();
+  }
 }
 
-function saveSessions() {
-  const today = new Date().toDateString();
-  localStorage.setItem('sessions_' + today, JSON.stringify(sessions));
-}
+async function logSession(minutes) {
+  if (!currentUserId) return;
 
-function logSession(minutes) {
-  const now = new Date();
-  const timeStr = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
-  sessions.unshift({ time: timeStr, duration: minutes, mode: currentMode });
-  saveSessions();
-  renderSessions();
-  updateStats();
+  const { data, error } = await sb.from('focus_sessions').insert({
+    user_id:  currentUserId,
+    duration: minutes,
+    mode:     currentMode,
+  }).select().single();
+
+  if (!error && data) {
+    sessions.unshift(data);
+    renderSessions();
+    updateStats();
+  }
 }
 
 function renderSessions() {
@@ -980,18 +964,16 @@ function renderSessions() {
   const none = document.getElementById('no-sessions');
   list.innerHTML = '';
 
-  const todaySessions = sessions.filter(s => s.mode === 'focus');
-  if (todaySessions.length === 0) {
-    none.style.display = 'block';
-    return;
-  }
-  none.style.display = 'none';
+  const focusSessions = sessions.filter(s => s.mode === 'focus');
+  none.style.display = focusSessions.length === 0 ? 'block' : 'none';
 
   sessions.forEach(s => {
+    const time = new Date(s.created_at);
+    const timeStr = time.getHours() + ':' + String(time.getMinutes()).padStart(2, '0');
     const el = document.createElement('div');
     el.className = 'session-item';
     el.innerHTML = `
-      <span class="session-date">${s.time}</span>
+      <span class="session-date">${timeStr}</span>
       <span class="session-dur">${s.duration} min</span>
       <span class="session-mode">${s.mode === 'focus' ? 'Fokus' : s.mode === 'short' ? 'Kort pause' : 'Lang pause'}</span>
     `;
@@ -1003,12 +985,8 @@ function updateStats() {
   const focusSessions = sessions.filter(s => s.mode === 'focus');
   const totalMins = focusSessions.reduce((sum, s) => sum + s.duration, 0);
   document.getElementById('stat-sessions').textContent = focusSessions.length;
-  document.getElementById('stat-minutes').textContent = totalMins;
-  updateRing();
+  document.getElementById('stat-minutes').textContent  = totalMins;
 }
-
-// Init ring color
-document.getElementById('ring').style.stroke = MODES['focus'].color;
 </script>
 </body>
 </html>
