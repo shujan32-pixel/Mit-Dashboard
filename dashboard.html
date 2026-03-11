@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mit Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #111114;
+    --surface2: #18181d;
+    --border: #222228;
+    --border2: #2e2e38;
+    --text: #e8e8ed;
+    --muted: #5a5a6e;
+    --accent: #7c6dfa;
+    --accent2: #4ade80;
+    --accent3: #f97316;
+    --danger: #ef4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  /* ── LOGIN SCREEN ── */
+  #login-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  .login-box {
+    width: 100%;
+    max-width: 400px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .login-logo {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.25rem;
+  }
+
+  .login-logo span { color: var(--accent); }
+
+  .login-sub {
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 3rem;
+  }
+
+  .field {
+    margin-bottom: 1rem;
+  }
+
+  .field label {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .field input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,109,250,0.15);
+  }
+
+  .login-btn {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 0.85rem;
+    margin-top: 0.5rem;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .login-btn:hover { opacity: 0.85; }
+  .login-btn:active { transform: scale(0.98); }
+
+  .login-error {
+    color: var(--danger);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    margin-top: 0.75rem;
+    text-align: center;
+    min-height: 1rem;
+  }
+
+  .login-hint {
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    text-align: center;
+    margin-top: 2rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── APP ── */
+  #app { display: none; min-height: 100vh; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 0;
+    z-index: 100;
+  }
+
+  .sidebar-logo {
+    padding: 0 1.5rem 2rem;
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+
+  .sidebar-logo span { color: var(--accent); }
+
+  .nav-section {
+    padding: 0 1rem;
+    flex: 1;
+  }
+
+  .nav-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--muted);
+    transition: background 0.15s, color 0.15s;
+    margin-bottom: 2px;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(124,109,250,0.15); color: var(--accent); }
+
+  .nav-item .icon { font-size: 1rem; width: 1.2rem; text-align: center; }
+
+  .nav-badge {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: var(--muted);
+  }
+
+  .sidebar-footer {
+    padding: 1.5rem 1rem 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .user-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .avatar {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+
+  .user-info { flex: 1; min-width: 0; }
+  .user-name { font-size: 0.82rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-role { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); }
+
+  .logout-btn {
+    width: 100%;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    padding: 0.5rem;
+    transition: border-color 0.2s, color 0.2s;
+    text-transform: uppercase;
+  }
+
+  .logout-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* ── MAIN CONTENT ── */
+  .main {
+    margin-left: 220px;
+    min-height: 100vh;
+    padding: 2.5rem 3rem;
+  }
+
+  .page { display: none; animation: fadeUp 0.4s ease both; }
+  .page.active { display: block; }
+
+  /* ── HOME PAGE ── */
+  .page-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .greeting {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 0.35rem;
+  }
+
+  .greeting .name { color: var(--accent); }
+
+  .greeting-sub {
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .stat-card:nth-child(1)::after { background: var(--accent); }
+  .stat-card:nth-child(2)::after { background: var(--accent2); }
+  .stat-card:nth-child(3)::after { background: var(--accent3); }
+
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .stat-value {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+
+  .stat-card:nth-child(1) .stat-value { color: var(--accent); }
+  .stat-card:nth-child(2) .stat-value { color: var(--accent2); }
+  .stat-card:nth-child(3) .stat-value { color: var(--accent3); }
+
+  .stat-unit {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .section-title {
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  .apps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+
+  .app-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .app-card:hover {
+    border-color: var(--border2);
+    background: var(--surface2);
+    transform: translateY(-2px);
+  }
+
+  .app-card.coming-soon { opacity: 0.45; cursor: default; }
+  .app-card.coming-soon:hover { transform: none; }
+
+  .app-icon {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .app-name {
+    font-size: 0.92rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+
+  .app-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .soon-tag {
+    position: absolute;
+    top: 1rem; right: 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    text-transform: uppercase;
+  }
+
+  /* ── FOCUS TIMER ── */
+  .timer-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 1rem;
+  }
+
+  .timer-display {
+    position: relative;
+    margin-bottom: 2.5rem;
+  }
+
+  .timer-ring-svg { transform: rotate(-90deg); }
+
+  .timer-ring-bg {
+    fill: none;
+    stroke: var(--surface2);
+    stroke-width: 6;
+  }
+
+  .timer-ring-progress {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear, stroke 0.3s;
+  }
+
+  .timer-text-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .timer-time {
+    font-size: 3.5rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    font-family: 'DM Mono', monospace;
+    line-height: 1;
+  }
+
+  .timer-mode-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.4rem;
+  }
+
+  .timer-modes {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .mode-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    padding: 0.45rem 0.9rem;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+
+  .mode-btn.active {
+    background: rgba(124,109,250,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .timer-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 3rem;
+  }
+
+  .ctrl-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1rem;
+    width: 48px; height: 48px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .ctrl-btn:hover { border-color: var(--border2); color: var(--text); }
+
+  .play-btn {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    width: 64px; height: 64px;
+    font-size: 1.4rem;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .play-btn:hover { opacity: 0.85; }
+  .play-btn:active { transform: scale(0.95); }
+
+  .sessions-log {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .session-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .session-date { font-size: 0.72rem; color: var(--muted); }
+  .session-dur { font-size: 0.82rem; color: var(--accent2); font-weight: 500; }
+  .session-mode { font-size: 0.68rem; color: var(--muted); }
+
+  /* ── SETTINGS ── */
+  .settings-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    max-width: 560px;
+  }
+
+  .settings-section h3 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .setting-row:last-child { margin-bottom: 0; }
+
+  .setting-label { font-size: 0.85rem; }
+  .setting-sub { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
+
+  .setting-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    padding: 0.4rem 0.7rem;
+    width: 80px;
+    text-align: center;
+    outline: none;
+  }
+
+  .setting-input:focus { border-color: var(--accent); }
+
+  .save-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.5rem 1.25rem;
+    transition: opacity 0.2s;
+  }
+
+  .save-btn:hover { opacity: 0.85; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .sidebar { width: 60px; padding: 1.5rem 0; }
+    .sidebar-logo, .nav-label, .nav-item span:not(.icon), .nav-badge, .user-info, .logout-btn { display: none; }
+    .nav-item { justify-content: center; padding: 0.6rem; }
+    .sidebar-footer { padding: 1rem 0.5rem 0; }
+    .user-row { justify-content: center; }
+    .main { margin-left: 60px; padding: 1.5rem; }
+    .stats-row { grid-template-columns: 1fr; }
+    .timer-time { font-size: 2.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ LOGIN ═══════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Mit<span>.</span>Dashboard</div>
+    <div class="login-sub">Personligt arbejdsrum</div>
+
+    <div class="field">
+      <label>Brugernavn</label>
+      <input type="text" id="username" placeholder="dit navn" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Adgangskode</label>
+      <input type="password" id="password" placeholder="••••••••">
+    </div>
+    <button class="login-btn" onclick="login()">Log ind →</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-hint">Demo: bruger <strong style="color:var(--text)">admin</strong> / kode <strong style="color:var(--text)">1234</strong></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ APP ════════════════════════════════ -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">Mit<span>.</span>DB</div>
+    <nav class="nav-section">
+      <div class="nav-label">Oversigt</div>
+      <button class="nav-item active" onclick="showPage('home', this)">
+        <span class="icon">⊞</span><span>Hjem</span>
+      </button>
+      <div class="nav-label" style="margin-top:1.5rem">Apps</div>
+      <button class="nav-item" onclick="showPage('timer', this)">
+        <span class="icon">◉</span><span>Focus Timer</span>
+      </button>
+      <button class="nav-item" onclick="showPage('budget', this)" style="opacity:0.45;cursor:default" disabled>
+        <span class="icon">◈</span><span>Budget</span>
+        <span class="nav-badge">Snart</span>
+      </button>
+      <button class="nav-item" onclick="showPage('notes', this)" style="opacity:0.45;cursor:default" disabled>
+        <span class="icon">◧</span><span>Noter</span>
+        <span class="nav-badge">Snart</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="avatar" id="sidebar-avatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebar-name">Admin</div>
+          <div class="user-role">Personlig</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="logout()">Log ud</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HOME -->
+    <div class="page active" id="page-home">
+      <div class="page-header">
+        <div class="greeting">God dag, <span class="name" id="greeting-name">Admin</span></div>
+        <div class="greeting-sub" id="greeting-date">—</div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Focus-sessioner i dag</div>
+          <div class="stat-value" id="stat-sessions">0</div>
+          <div class="stat-unit">sessioner</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total fokustid i dag</div>
+          <div class="stat-value" id="stat-minutes">0</div>
+          <div class="stat-unit">minutter</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Streak</div>
+          <div class="stat-value" id="stat-streak">1</div>
+          <div class="stat-unit">dage i træk</div>
+        </div>
+      </div>
+
+      <div class="section-title">Dine apps</div>
+      <div class="apps-grid">
+        <div class="app-card" onclick="showPage('timer', document.querySelector('[onclick*=timer]'))">
+          <span class="app-icon">◉</span>
+          <div class="app-name">Focus Timer</div>
+          <div class="app-desc">Pomodoro-baseret fokustimer med sessionslog</div>
+        </div>
+        <div class="app-card coming-soon">
+          <span class="soon-tag">Snart</span>
+          <span class="app-icon">◈</span>
+          <div class="app-name">Budget</div>
+          <div class="app-desc">Oversigt over indtægter og udgifter</div>
+        </div>
+        <div class="app-card coming-soon">
+          <span class="soon-tag">Snart</span>
+          <span class="app-icon">◧</span>
+          <div class="app-name">Noter</div>
+          <div class="app-desc">Hurtige noter og tjeklister</div>
+        </div>
+        <div class="app-card coming-soon">
+          <span class="soon-tag">Snart</span>
+          <span class="app-icon">◱</span>
+          <div class="app-name">Vaner</div>
+          <div class="app-desc">Daglige vaner og mål</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOCUS TIMER -->
+    <div class="page" id="page-timer">
+      <div class="page-header">
+        <div class="greeting" style="font-size:1.5rem">Focus <span class="name">Timer</span></div>
+        <div class="greeting-sub">Pomodoro · dyb fokus · pauser</div>
+      </div>
+
+      <div class="timer-wrapper">
+        <div class="timer-modes">
+          <button class="mode-btn active" onclick="setMode('focus', this)">Focus</button>
+          <button class="mode-btn" onclick="setMode('short', this)">Kort pause</button>
+          <button class="mode-btn" onclick="setMode('long', this)">Lang pause</button>
+        </div>
+
+        <div class="timer-display">
+          <svg class="timer-ring-svg" width="260" height="260" viewBox="0 0 260 260">
+            <circle class="timer-ring-bg" cx="130" cy="130" r="115"/>
+            <circle class="timer-ring-progress" id="ring" cx="130" cy="130" r="115"
+              stroke-dasharray="722.6"
+              stroke-dashoffset="0"/>
+          </svg>
+          <div class="timer-text-overlay">
+            <div class="timer-time" id="timer-display">25:00</div>
+            <div class="timer-mode-label" id="mode-label">FOKUSTID</div>
+          </div>
+        </div>
+
+        <div class="timer-controls">
+          <button class="ctrl-btn" onclick="resetTimer()" title="Nulstil">↺</button>
+          <button class="play-btn" id="play-btn" onclick="toggleTimer()">▶</button>
+          <button class="ctrl-btn" onclick="skipTimer()" title="Spring over">⏭</button>
+        </div>
+
+        <div class="sessions-log" id="sessions-log">
+          <div class="section-title">Dagens sessioner</div>
+          <div id="session-list"></div>
+          <div id="no-sessions" style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);text-align:center;padding:1.5rem 0;">
+            Ingen sessioner endnu — start en timer!
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── AUTH ──────────────────────────────────────────────────────────────
+const USERS = { admin: '1234' };
+
+function login() {
+  const u = document.getElementById('username').value.trim();
+  const p = document.getElementById('password').value;
+  const err = document.getElementById('login-error');
+
+  if (USERS[u] && USERS[u] === p) {
+    err.textContent = '';
+    sessionStorage.setItem('user', u);
+    startApp(u);
+  } else {
+    err.textContent = 'Forkert brugernavn eller adgangskode.';
+    document.getElementById('password').value = '';
+  }
+}
+
+document.getElementById('password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') login();
+});
+document.getElementById('username').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('password').focus();
+});
+
+function logout() {
+  sessionStorage.removeItem('user');
+  stopTimer();
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+}
+
+function startApp(username) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  const display = username.charAt(0).toUpperCase() + username.slice(1);
+  document.getElementById('greeting-name').textContent = display;
+  document.getElementById('sidebar-name').textContent = display;
+  document.getElementById('sidebar-avatar').textContent = display.charAt(0).toUpperCase();
+
+  const now = new Date();
+  const days = ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
+  const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+  document.getElementById('greeting-date').textContent =
+    `${days[now.getDay()]} · ${now.getDate()}. ${months[now.getMonth()]} ${now.getFullYear()}`;
+
+  loadSessions();
+  updateStats();
+}
+
+// Auto-login if session exists
+window.addEventListener('load', () => {
+  const u = sessionStorage.getItem('user');
+  if (u && USERS[u]) startApp(u);
+});
+
+// ── NAVIGATION ────────────────────────────────────────────────────────
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ── TIMER ─────────────────────────────────────────────────────────────
+const MODES = {
+  focus: { label: 'FOKUSTID',   mins: 25, color: '#7c6dfa' },
+  short: { label: 'KORT PAUSE', mins: 5,  color: '#4ade80' },
+  long:  { label: 'LANG PAUSE', mins: 15, color: '#f97316' }
+};
+
+let currentMode = 'focus';
+let totalSeconds = 25 * 60;
+let remainingSeconds = totalSeconds;
+let timerInterval = null;
+let isRunning = false;
+let sessions = [];
+
+const CIRCUMFERENCE = 2 * Math.PI * 115; // 722.6
+
+function setMode(mode, btn) {
+  if (isRunning) return;
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  totalSeconds = MODES[mode].mins * 60;
+  remainingSeconds = totalSeconds;
+  document.getElementById('ring').style.stroke = MODES[mode].color;
+  document.getElementById('mode-label').textContent = MODES[mode].label;
+  updateDisplay();
+  updateRing();
+}
+
+function updateDisplay() {
+  const m = Math.floor(remainingSeconds / 60);
+  const s = remainingSeconds % 60;
+  document.getElementById('timer-display').textContent =
+    String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function updateRing() {
+  const pct = remainingSeconds / totalSeconds;
+  const offset = CIRCUMFERENCE * (1 - pct);
+  document.getElementById('ring').style.strokeDashoffset = offset;
+}
+
+function toggleTimer() {
+  if (isRunning) {
+    clearInterval(timerInterval);
+    isRunning = false;
+    document.getElementById('play-btn').textContent = '▶';
+  } else {
+    isRunning = true;
+    document.getElementById('play-btn').textContent = '⏸';
+    timerInterval = setInterval(() => {
+      remainingSeconds--;
+      updateDisplay();
+      updateRing();
+      if (remainingSeconds <= 0) {
+        clearInterval(timerInterval);
+        isRunning = false;
+        document.getElementById('play-btn').textContent = '▶';
+        if (currentMode === 'focus') {
+          logSession(MODES[currentMode].mins);
+        }
+        remainingSeconds = totalSeconds;
+        updateDisplay();
+        updateRing();
+        try { new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAA...').play(); } catch(e){}
+      }
+    }, 1000);
+  }
+}
+
+function resetTimer() {
+  stopTimer();
+  remainingSeconds = totalSeconds;
+  updateDisplay();
+  updateRing();
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  isRunning = false;
+  document.getElementById('play-btn').textContent = '▶';
+}
+
+function skipTimer() {
+  stopTimer();
+  if (currentMode === 'focus') {
+    const elapsed = Math.round((totalSeconds - remainingSeconds) / 60);
+    if (elapsed >= 1) logSession(elapsed);
+  }
+  remainingSeconds = totalSeconds;
+  updateDisplay();
+  updateRing();
+}
+
+// ── SESSIONS ──────────────────────────────────────────────────────────
+function loadSessions() {
+  const today = new Date().toDateString();
+  const stored = localStorage.getItem('sessions_' + today);
+  sessions = stored ? JSON.parse(stored) : [];
+  renderSessions();
+}
+
+function saveSessions() {
+  const today = new Date().toDateString();
+  localStorage.setItem('sessions_' + today, JSON.stringify(sessions));
+}
+
+function logSession(minutes) {
+  const now = new Date();
+  const timeStr = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+  sessions.unshift({ time: timeStr, duration: minutes, mode: currentMode });
+  saveSessions();
+  renderSessions();
+  updateStats();
+}
+
+function renderSessions() {
+  const list = document.getElementById('session-list');
+  const none = document.getElementById('no-sessions');
+  list.innerHTML = '';
+
+  const todaySessions = sessions.filter(s => s.mode === 'focus');
+  if (todaySessions.length === 0) {
+    none.style.display = 'block';
+    return;
+  }
+  none.style.display = 'none';
+
+  sessions.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'session-item';
+    el.innerHTML = `
+      <span class="session-date">${s.time}</span>
+      <span class="session-dur">${s.duration} min</span>
+      <span class="session-mode">${s.mode === 'focus' ? 'Fokus' : s.mode === 'short' ? 'Kort pause' : 'Lang pause'}</span>
+    `;
+    list.appendChild(el);
+  });
+}
+
+function updateStats() {
+  const focusSessions = sessions.filter(s => s.mode === 'focus');
+  const totalMins = focusSessions.reduce((sum, s) => sum + s.duration, 0);
+  document.getElementById('stat-sessions').textContent = focusSessions.length;
+  document.getElementById('stat-minutes').textContent = totalMins;
+  updateRing();
+}
+
+// Init ring color
+document.getElementById('ring').style.stroke = MODES['focus'].color;
+</script>
+</body>
+</html>
