@@ -713,7 +713,11 @@
 const SUPABASE_URL = 'https://tgtvloytglyxaenpfsus.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRndHZsb3l0Z2x5eGFlbnBmc3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNTY2ODMsImV4cCI6MjA4ODgzMjY4M30.NsgDjbwqRzKV-OG-L74ycljtforovq9qYLxOBPiqb9s';
 const { createClient } = supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    redirectTo: 'https://mit-dashboard.vercel.app'
+  }
+});
 
 // ── BOOT ──────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
@@ -824,6 +828,25 @@ function startApp(user) {
 
   currentUserId = user.id;
   loadSessions();
+  requestNotifications();
+}
+
+// ── NOTIFICATIONS ─────────────────────────────────────────────────
+async function requestNotifications() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    await Notification.requestPermission();
+  }
+}
+
+function sendNotification(title, body) {
+  if (Notification.permission === 'granted') {
+    new Notification(title, {
+      body,
+      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%237c6dfa"/><text y=".9em" x="50%" text-anchor="middle" font-size="60" fill="white">◉</text></svg>',
+      silent: false
+    });
+  }
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────────
@@ -893,7 +916,14 @@ function toggleTimer() {
         clearInterval(timerInterval);
         isRunning = false;
         document.getElementById('play-btn').textContent = '▶';
-        if (currentMode === 'focus') logSession(MODES[currentMode].mins);
+        if (currentMode === 'focus') {
+          logSession(MODES[currentMode].mins);
+          sendNotification('Fokus-session færdig! 🎉', `${MODES.focus.mins} minutter klaret — tag en velfortjent pause.`);
+        } else if (currentMode === 'short') {
+          sendNotification('Pause slut ⏰', 'Klar til endnu en fokus-session?');
+        } else {
+          sendNotification('Lang pause slut ⏰', 'Du er klar til at fortsætte!');
+        }
         remainingSeconds = totalSeconds;
         updateDisplay();
         updateRing();
