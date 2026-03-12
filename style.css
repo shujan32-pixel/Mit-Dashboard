@@ -316,3 +316,42 @@
 .news-link { font-family:'DM Mono',monospace; font-size:0.65rem; color:var(--accent); text-decoration:none; }
 .news-link:hover { text-decoration:underline; }
 .news-breaking-badge { display:inline-block; background:var(--danger); color:#fff; font-family:'DM Mono',monospace; font-size:0.58rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:2px 6px; border-radius:3px; margin-bottom:0.5rem; }
+
+/* NOTER */
+.notes-layout { display:grid; grid-template-columns:280px 1fr; gap:1.5rem; height:calc(100vh - 220px); min-height:500px; }
+.notes-sidebar { display:flex; flex-direction:column; overflow:hidden; }
+.notes-filter-row { display:flex; gap:0.4rem; margin-bottom:1rem; }
+.notes-filter { background:var(--surface); border:1px solid var(--border); border-radius:5px; color:var(--muted); cursor:pointer; font-family:'DM Mono',monospace; font-size:0.68rem; padding:0.3rem 0.65rem; transition:all 0.15s; }
+.notes-filter.active { background:rgba(124,109,250,0.15); border-color:var(--accent); color:var(--accent); }
+#notes-list { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:0.5rem; }
+.note-item { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:0.85rem 1rem; cursor:pointer; transition:border-color 0.15s; border-left:3px solid var(--border); }
+.note-item:hover { border-color:var(--border2); }
+.note-item.active { border-color:var(--accent); background:rgba(124,109,250,0.07); }
+.note-item.color-purple { border-left-color:var(--accent); }
+.note-item.color-green  { border-left-color:var(--accent2); }
+.note-item.color-orange { border-left-color:var(--accent3); }
+.note-item.color-red    { border-left-color:var(--danger); }
+.note-item-title { font-size:0.85rem; font-weight:700; margin-bottom:0.25rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.note-item-preview { font-family:'DM Mono',monospace; font-size:0.68rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.note-item-meta { display:flex; justify-content:space-between; align-items:center; margin-top:0.4rem; }
+.note-item-date { font-family:'DM Mono',monospace; font-size:0.62rem; color:var(--muted); }
+.note-item-type { font-family:'DM Mono',monospace; font-size:0.6rem; background:var(--surface2); border-radius:3px; padding:1px 5px; color:var(--muted); }
+.notes-editor { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1.75rem; overflow:hidden; display:flex; flex-direction:column; }
+.todo-item { display:flex; align-items:center; gap:0.75rem; padding:0.5rem 0; border-bottom:1px solid var(--border); }
+.todo-item:last-child { border-bottom:none; }
+.todo-check { width:20px; height:20px; border-radius:4px; border:2px solid var(--border2); background:none; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.75rem; transition:all 0.15s; }
+.todo-check.done { background:var(--accent2); border-color:var(--accent2); color:#000; }
+.todo-text { flex:1; font-family:'DM Mono',monospace; font-size:0.85rem; background:transparent; border:none; color:var(--text); outline:none; }
+.todo-text.done { text-decoration:line-through; color:var(--muted); }
+.todo-del { background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.8rem; transition:color 0.15s; }
+.todo-del:hover { color:var(--danger); }
+@media (max-width:900px) { .notes-layout { grid-template-columns:1fr; } .notes-editor { min-height:400px; } }
+
+/* TODO KALENDER */
+.todo-cal-btn { background:none; border:1px solid var(--border); border-radius:5px; color:var(--muted); cursor:pointer; font-size:0.75rem; padding:0.2rem 0.4rem; transition:all 0.15s; flex-shrink:0; }
+.todo-cal-btn:hover { border-color:var(--accent); color:var(--accent); }
+.todo-cal-btn.active { border-color:var(--accent2); color:var(--accent2); background:rgba(74,222,128,0.1); }
+.todo-cal-picker { background:var(--surface2); border:1px solid var(--border2); border-radius:8px; padding:0.75rem 1rem; margin-top:0.5rem; display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; grid-column:1/-1; width:100%; }
+.todo-cal-date, .todo-cal-time { background:var(--surface); border:1px solid var(--border); border-radius:5px; color:var(--text); font-family:'DM Mono',monospace; font-size:0.75rem; padding:0.3rem 0.5rem; outline:none; }
+.todo-cal-date:focus, .todo-cal-time:focus { border-color:var(--accent); }
+.todo-item { flex-wrap:wrap; }

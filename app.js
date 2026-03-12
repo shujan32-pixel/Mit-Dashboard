@@ -79,6 +79,7 @@ function showPage(id, btn) {
   if (id === 'budget') setTimeout(renderBudgetChart, 100);
   if (id === 'morgen') initMorgenPage();
   if (id === 'nyheder') initNews();
+  if (id === 'noter') loadNotes();
 }
 
 // ── TIMER ─────────────────────────────────────────────────────────
@@ -1541,4 +1542,347 @@ function getTimeAgo(dateStr) {
   if (h < 24)    return `${h} time${h > 1 ? 'r' : ''} siden`;
   const d = Math.floor(h / 24);
   return `${d} dag${d > 1 ? 'e' : ''} siden`;
+}
+
+// ── NOTER ─────────────────────────────────────────────────────────
+let notes = [];
+let currentNoteId = null;
+let notesFilter = 'all';
+let noteSaveTimeout = null;
+
+async function loadNotes() {
+  if (!currentUserId) return;
+  const { data } = await sb.from('notes').select('*').eq('user_id', currentUserId).order('updated_at', { ascending: false });
+  if (data) { notes = data; renderNotesList(); }
+}
+
+function setNotesFilter(filter, btn) {
+  notesFilter = filter;
+  document.querySelectorAll('.notes-filter').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderNotesList();
+}
+
+function filterNotes() { renderNotesList(); }
+
+function renderNotesList() {
+  const list    = document.getElementById('notes-list');
+  const search  = (document.getElementById('notes-search')?.value || '').toLowerCase();
+  if (!list) return;
+
+  let filtered = notes.filter(n => {
+    if (notesFilter !== 'all' && n.type !== notesFilter) return false;
+    if (search && !n.title.toLowerCase().includes(search) && !(n.body||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="no-data">Ingen noter fundet</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  filtered.forEach(n => {
+    const el = document.createElement('div');
+    el.className = `note-item ${n.color !== 'default' ? 'color-' + n.color : ''} ${n.id === currentNoteId ? 'active' : ''}`;
+    const preview = n.type === 'todo'
+      ? (JSON.parse(n.body || '[]').map(i => (i.done ? '✓ ' : '○ ') + i.text).join(' · ').slice(0, 60) || 'Tom to-do liste')
+      : (n.body || '').slice(0, 60) || 'Tom note';
+    const date = new Date(n.updated_at).toLocaleDateString('da-DK', { day:'numeric', month:'short' });
+    el.innerHTML = `
+      <div class="note-item-title">${n.title || 'Unavngivet'}</div>
+      <div class="note-item-preview">${preview}</div>
+      <div class="note-item-meta">
+        <span class="note-item-date">${date}</span>
+        <span class="note-item-type">${n.type === 'todo' ? '☑ to-do' : '📝 note'}</span>
+      </div>`;
+    el.onclick = () => openNote(n.id);
+    list.appendChild(el);
+  });
+}
+
+function openNote(id) {
+  currentNoteId = id;
+  const n = notes.find(n => n.id === id);
+  if (!n) return;
+
+  document.getElementById('note-empty-state').style.display = 'none';
+  document.getElementById('note-edit-area').style.display   = 'flex';
+  document.getElementById('note-title-input').value         = n.title || '';
+  document.getElementById('note-color-select').value        = n.color || 'default';
+
+  if (n.type === 'todo') {
+    document.getElementById('note-content-area').style.display = 'none';
+    document.getElementById('todo-content-area').style.display = 'block';
+    renderTodoItems(JSON.parse(n.body || '[]'));
+  } else {
+    document.getElementById('note-content-area').style.display = 'block';
+    document.getElementById('todo-content-area').style.display = 'none';
+    document.getElementById('note-body-input').value = n.body || '';
+  }
+
+  document.getElementById('note-saved-status').textContent = 'Sidst gemt: ' + new Date(n.updated_at).toLocaleTimeString('da-DK', { hour:'2-digit', minute:'2-digit' });
+  renderNotesList();
+
+  // Auto-gem ved tastning
+  document.getElementById('note-title-input').oninput = () => scheduleSave();
+  document.getElementById('note-body-input').oninput  = () => scheduleSave();
+}
+
+function scheduleSave() {
+  clearTimeout(noteSaveTimeout);
+  noteSaveTimeout = setTimeout(saveCurrentNote, 1200);
+  document.getElementById('note-saved-status').textContent = 'Gemmer...';
+}
+
+async function saveCurrentNote() {
+  if (!currentNoteId) return;
+  const n = notes.find(n => n.id === currentNoteId);
+  if (!n) return;
+
+  const title = document.getElementById('note-title-input').value;
+  const color = document.getElementById('note-color-select').value;
+  let body = n.body;
+
+  if (n.type === 'note') {
+    body = document.getElementById('note-body-input').value;
+  } else {
+    // hent todo-items fra DOM
+    const items = [...document.querySelectorAll('.todo-item')].map(el => ({
+      text: el.querySelector('.todo-text').value,
+      done: el.querySelector('.todo-check').classList.contains('done')
+    }));
+    body = JSON.stringify(items);
+  }
+
+  const { data } = await sb.from('notes').update({ title, body, color, updated_at: new Date().toISOString() }).eq('id', currentNoteId).select().single();
+  if (data) {
+    const idx = notes.findIndex(n => n.id === currentNoteId);
+    if (idx !== -1) notes[idx] = data;
+    notes.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    document.getElementById('note-saved-status').textContent = 'Gemt ' + new Date().toLocaleTimeString('da-DK', { hour:'2-digit', minute:'2-digit' });
+    renderNotesList();
+  }
+}
+
+async function newNote() {
+  const { data } = await sb.from('notes').insert({ user_id: currentUserId, type: 'note', title: 'Ny note', body: '', color: 'default' }).select().single();
+  if (data) { notes.unshift(data); renderNotesList(); openNote(data.id); }
+}
+
+async function newTodo() {
+  const { data } = await sb.from('notes').insert({ user_id: currentUserId, type: 'todo', title: 'Ny to-do liste', body: '[]', color: 'default' }).select().single();
+  if (data) { notes.unshift(data); renderNotesList(); openNote(data.id); }
+}
+
+async function deleteCurrentNote() {
+  if (!currentNoteId) return;
+  if (!confirm('Slet denne note?')) return;
+  await sb.from('notes').delete().eq('id', currentNoteId);
+  notes = notes.filter(n => n.id !== currentNoteId);
+  currentNoteId = null;
+  document.getElementById('note-empty-state').style.display = 'flex';
+  document.getElementById('note-edit-area').style.display   = 'none';
+  renderNotesList();
+}
+
+function updateNoteColor() { scheduleSave(); }
+
+// ── TODO ITEMS ─────────────────────────────────────────────────────
+function renderTodoItems(items) {
+  const list = document.getElementById('todo-items-list');
+  list.innerHTML = '';
+  items.forEach((item) => {
+    list.appendChild(buildTodoEl(item));
+  });
+}
+
+function buildTodoEl(item = {}) {
+  const el = document.createElement('div');
+  el.className = 'todo-item';
+  el.dataset.calEventId = item.calEventId || '';
+  const hasCalEvent = !!item.calEventId;
+  el.innerHTML = `
+    <button class="todo-check ${item.done ? 'done' : ''}" onclick="toggleTodoItem(this)">${item.done ? '✓' : ''}</button>
+    <input class="todo-text ${item.done ? 'done' : ''}" value="${(item.text||'').replace(/"/g,'&quot;')}" oninput="scheduleSave()" onkeydown="if(event.key==='Enter'){document.getElementById('todo-new-item').focus()}">
+    <button class="todo-cal-btn ${hasCalEvent ? 'active' : ''}" title="${hasCalEvent ? 'Begivenhed oprettet ✓' : 'Send til kalender'}" onclick="toggleTodoCalendar(this)">
+      ${hasCalEvent ? '📅✓' : '📅'}
+    </button>
+    <button class="todo-del" onclick="removeTodoItem(this)">✕</button>
+    <div class="todo-cal-picker" style="display:none">
+      <input type="date" class="todo-cal-date" value="${item.calDate || getTodayStr()}">
+      <input type="time" class="todo-cal-time" value="${item.calTime || '09:00'}">
+      <button class="todo-cal-confirm action-btn" style="padding:0.3rem 0.7rem;font-size:0.72rem" onclick="sendTodoToCalendar(this)">
+        ${hasCalEvent ? 'Opdatér' : 'Opret begivenhed →'}
+      </button>
+      ${hasCalEvent ? `<button style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.72rem;font-family:'DM Mono',monospace" onclick="removeTodoCalEvent(this)">Fjern fra kalender</button>` : ''}
+    </div>`;
+  return el;
+}
+
+function getTodayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function toggleTodoItem(btn) {
+  btn.classList.toggle('done');
+  btn.textContent = btn.classList.contains('done') ? '✓' : '';
+  btn.nextElementSibling.classList.toggle('done', btn.classList.contains('done'));
+  scheduleSave();
+}
+
+function removeTodoItem(btn) {
+  btn.parentElement.remove();
+  scheduleSave();
+}
+
+function toggleTodoCalendar(btn) {
+  const picker = btn.parentElement.querySelector('.todo-cal-picker');
+  const isOpen = picker.style.display === 'block';
+  // Luk alle andre pickere
+  document.querySelectorAll('.todo-cal-picker').forEach(p => p.style.display = 'none');
+  picker.style.display = isOpen ? 'none' : 'block';
+}
+
+async function sendTodoToCalendar(btn) {
+  const item    = btn.closest('.todo-item');
+  const text    = item.querySelector('.todo-text').value.trim();
+  const date    = item.querySelector('.todo-cal-date').value;
+  const time    = item.querySelector('.todo-cal-time').value;
+  if (!text || !date || !time) return;
+
+  btn.textContent = '⏳ Opretter...';
+  btn.disabled    = true;
+
+  const [h, m]    = time.split(':').map(Number);
+  const startISO  = `${date}T${time}:00`;
+  const endH      = String(h + 1).padStart(2, '0');
+  const endISO    = `${date}T${endH}:${String(m).padStart(2,'0')}:00`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        mcp_servers: [{ type: 'url', url: 'https://gcal.mcp.claude.com/mcp', name: 'gcal' }],
+        messages: [{
+          role: 'user',
+          content: `Opret en kalenderbegivenhed med titel "☑ ${text}". Start: ${startISO}+01:00, Slut: ${endISO}+01:00, tidszone: Europe/Copenhagen. Tilføj popup-påmindelse 30 minutter før og e-mail påmindelse 60 minutter før. Beskrivelse: "To-do fra Mit Dashboard". Svar KUN med begivenhedens ID i formatet: EVENT_ID:xxxxxxx`
+        }]
+      })
+    });
+    const data  = await res.json();
+    const reply = data.content?.find(c => c.type === 'text')?.text || '';
+    const match = reply.match(/EVENT_ID:(\S+)/);
+    const eventId = match ? match[1] : 'ok';
+
+    // Gem event ID på elementet
+    item.dataset.calEventId = eventId;
+    const calBtn = item.querySelector('.todo-cal-btn');
+    calBtn.textContent = '📅✓';
+    calBtn.classList.add('active');
+    calBtn.title = 'Begivenhed oprettet ✓';
+
+    // Opdatér confirm knap og tilføj fjern-knap
+    btn.textContent = 'Opdatér';
+    btn.disabled    = false;
+    const picker    = item.querySelector('.todo-cal-picker');
+    if (!picker.querySelector('.todo-cal-remove')) {
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'todo-cal-remove';
+      removeBtn.style.cssText = "background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.72rem;font-family:'DM Mono',monospace";
+      removeBtn.textContent = 'Fjern fra kalender';
+      removeBtn.onclick = function() { removeTodoCalEvent(this); };
+      picker.appendChild(removeBtn);
+    }
+
+    scheduleSave();
+  } catch(e) {
+    btn.textContent = 'Fejl — prøv igen';
+    btn.disabled    = false;
+  }
+}
+
+async function removeTodoCalEvent(btn) {
+  const item    = btn.closest('.todo-item');
+  const eventId = item.dataset.calEventId;
+  if (!eventId || eventId === 'ok') {
+    item.dataset.calEventId = '';
+    resetTodoCalBtn(item);
+    scheduleSave();
+    return;
+  }
+  btn.textContent = '⏳ Fjerner...';
+  try {
+    await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 100,
+        mcp_servers: [{ type: 'url', url: 'https://gcal.mcp.claude.com/mcp', name: 'gcal' }],
+        messages: [{ role: 'user', content: `Slet kalenderbegivenhed med ID: ${eventId}. Svar kun med "OK".` }]
+      })
+    });
+  } catch(e) {}
+  item.dataset.calEventId = '';
+  resetTodoCalBtn(item);
+  scheduleSave();
+}
+
+function resetTodoCalBtn(item) {
+  const calBtn    = item.querySelector('.todo-cal-btn');
+  calBtn.textContent = '📅';
+  calBtn.classList.remove('active');
+  calBtn.title    = 'Send til kalender';
+  const picker    = item.querySelector('.todo-cal-picker');
+  const confirmBtn = picker.querySelector('.todo-cal-confirm');
+  if (confirmBtn) confirmBtn.textContent = 'Opret begivenhed →';
+  const removeBtn = picker.querySelector('.todo-cal-remove');
+  if (removeBtn) removeBtn.remove();
+  picker.style.display = 'none';
+}
+
+function addTodoItem() {
+  const input = document.getElementById('todo-new-item');
+  const text  = input.value.trim();
+  if (!text) return;
+  const list = document.getElementById('todo-items-list');
+  list.appendChild(buildTodoEl({ text, done: false }));
+  input.value = '';
+  input.focus();
+  scheduleSave();
+}
+
+// Overskriver saveCurrentNote til at inkludere calEventId
+const _origSave = saveCurrentNote;
+async function saveCurrentNote() {
+  if (!currentNoteId) return;
+  const n = notes.find(n => n.id === currentNoteId);
+  if (!n) return;
+  const title = document.getElementById('note-title-input').value;
+  const color = document.getElementById('note-color-select').value;
+  let body = n.body;
+  if (n.type === 'note') {
+    body = document.getElementById('note-body-input').value;
+  } else {
+    const items = [...document.querySelectorAll('.todo-item')].map(el => ({
+      text:       el.querySelector('.todo-text').value,
+      done:       el.querySelector('.todo-check').classList.contains('done'),
+      calEventId: el.dataset.calEventId || '',
+      calDate:    el.querySelector('.todo-cal-date')?.value || '',
+      calTime:    el.querySelector('.todo-cal-time')?.value || '09:00',
+    }));
+    body = JSON.stringify(items);
+  }
+  const { data } = await sb.from('notes').update({ title, body, color, updated_at: new Date().toISOString() }).eq('id', currentNoteId).select().single();
+  if (data) {
+    const idx = notes.findIndex(n => n.id === currentNoteId);
+    if (idx !== -1) notes[idx] = data;
+    notes.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    document.getElementById('note-saved-status').textContent = 'Gemt ' + new Date().toLocaleTimeString('da-DK', { hour:'2-digit', minute:'2-digit' });
+    renderNotesList();
+  }
 }
