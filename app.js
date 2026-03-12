@@ -78,6 +78,7 @@ function showPage(id, btn) {
   if (btn) btn.classList.add('active');
   if (id === 'budget') setTimeout(renderBudgetChart, 100);
   if (id === 'morgen') initMorgenPage();
+  if (id === 'nyheder') initNews();
 }
 
 // ── TIMER ─────────────────────────────────────────────────────────
@@ -1393,4 +1394,131 @@ function updateHomeStats() {
   const balEl=document.getElementById('stat-balance');
   balEl.textContent=bal.toLocaleString('da-DK');
   balEl.style.color=bal>=0?'var(--accent2)':'var(--danger)';
+}
+// ── NYHEDER ───────────────────────────────────────────────────────
+const GNEWS_TOPICS = {
+  breaking:   { q: 'breaking news', lang: 'da', label: 'Breaking nyheder' },
+  technology: { q: 'technology',    lang: 'en', label: 'Teknologi' },
+  denmark:    { q: 'Danmark',       lang: 'da', label: 'Danmark' },
+  business:   { q: 'økonomi erhverv', lang: 'da', label: 'Erhverv' }
+};
+
+let currentNewsTopic = 'breaking';
+let newsApiKey = null;
+
+function initNews() {
+  newsApiKey = localStorage.getItem('gnews_api_key');
+  if (!newsApiKey) {
+    document.getElementById('news-api-missing').style.display = 'block';
+    document.getElementById('news-content').style.display = 'none';
+  } else {
+    document.getElementById('news-api-missing').style.display = 'none';
+    document.getElementById('news-content').style.display = 'block';
+    fetchNews(currentNewsTopic);
+  }
+}
+
+function saveNewsApiKey() {
+  const key = document.getElementById('news-api-input').value.trim();
+  if (!key) return;
+  localStorage.setItem('gnews_api_key', key);
+  newsApiKey = key;
+  document.getElementById('news-api-missing').style.display = 'none';
+  document.getElementById('news-content').style.display = 'block';
+  fetchNews(currentNewsTopic);
+}
+
+function resetNewsApiKey() {
+  localStorage.removeItem('gnews_api_key');
+  newsApiKey = null;
+  document.getElementById('news-api-missing').style.display = 'block';
+  document.getElementById('news-content').style.display = 'none';
+}
+
+function setNewsTopic(topic, btn) {
+  currentNewsTopic = topic;
+  document.querySelectorAll('#news-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  fetchNews(topic);
+}
+
+function refreshNews() {
+  fetchNews(currentNewsTopic);
+}
+
+async function fetchNews(topic) {
+  if (!newsApiKey) return;
+  const grid    = document.getElementById('news-grid');
+  const loading = document.getElementById('news-loading');
+  const empty   = document.getElementById('news-empty');
+  const updated = document.getElementById('news-updated');
+
+  grid.style.display    = 'none';
+  empty.style.display   = 'none';
+  loading.style.display = 'block';
+
+  const { q, lang } = GNEWS_TOPICS[topic] || GNEWS_TOPICS.breaking;
+  const url = `https://gnews.io/api/v4/search?q=${encodeURIComponent(q)}&lang=${lang}&max=9&apikey=${newsApiKey}`;
+
+  try {
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    loading.style.display = 'none';
+
+    if (data.errors || !data.articles || data.articles.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+
+    grid.style.display = 'grid';
+    grid.innerHTML = '';
+
+    data.articles.forEach((article, i) => {
+      const card = document.createElement('a');
+      card.className  = 'news-card';
+      card.href       = article.url;
+      card.target     = '_blank';
+      card.rel        = 'noopener noreferrer';
+
+      const timeAgo   = getTimeAgo(article.publishedAt);
+      const isBreaking = topic === 'breaking' && i < 2;
+      const imgHtml  = article.image
+        ? `<img class="news-img" src="${article.image}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<div class=news-img-placeholder>📰</div>'">`
+        : `<div class="news-img-placeholder">📰</div>`;
+
+      card.innerHTML = `
+        ${imgHtml}
+        <div class="news-body">
+          ${isBreaking ? '<span class="news-breaking-badge">Breaking</span>' : ''}
+          <div class="news-source">${article.source?.name || 'Ukendt kilde'}</div>
+          <div class="news-title">${article.title}</div>
+          <div class="news-desc">${article.description || ''}</div>
+          <div class="news-footer">
+            <span class="news-time">${timeAgo}</span>
+            <span class="news-link">Læs mere →</span>
+          </div>
+        </div>`;
+
+      grid.appendChild(card);
+    });
+
+    const now = new Date();
+    updated.textContent = `Opdateret ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  } catch(e) {
+    loading.style.display = 'none';
+    empty.style.display   = 'block';
+    empty.textContent     = 'Fejl ved hentning af nyheder — tjek din API-nøgle';
+  }
+}
+
+function getTimeAgo(dateStr) {
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000);
+  if (diff < 1)   return 'Lige nu';
+  if (diff < 60)  return `${diff} min siden`;
+  const h = Math.floor(diff / 60);
+  if (h < 24)     return `${h} time${h > 1 ? 'r' : ''} siden`;
+  const d = Math.floor(h / 24);
+  return `${d} dag${d > 1 ? 'e' : ''} siden`;
 }

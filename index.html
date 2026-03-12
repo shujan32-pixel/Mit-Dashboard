@@ -45,6 +45,7 @@
       <button class="nav-item" onclick="showPage('timer',this)"><span class="icon">◉</span><span>Focus Timer</span></button>
       <button class="nav-item" onclick="showPage('vaner',this)"><span class="icon">◈</span><span>Vaner</span></button>
       <button class="nav-item" onclick="showPage('budget',this)"><span class="icon">◧</span><span>Budget</span></button>
+      <button class="nav-item" onclick="showPage('nyheder',this)"><span class="icon">📰</span><span>Nyheder</span></button>
       <button class="nav-item" disabled><span class="icon">◱</span><span>Noter</span><span class="nav-badge">Snart</span></button>
     </nav>
     <div class="sidebar-footer">
@@ -504,6 +505,59 @@
         </div>
       </div>
     </div>
+    <!-- NYHEDER -->
+    <div class="page" id="page-nyheder">
+      <div class="page-header">
+        <div class="greeting" style="font-size:1.5rem">Dagens <span class="name">Nyheder</span></div>
+        <div class="greeting-sub" id="news-updated">—</div>
+      </div>
+
+      <!-- API nøgle mangler -->
+      <div id="news-api-missing" style="display:none">
+        <div class="panel" style="max-width:560px;border-color:var(--accent3)">
+          <div style="font-size:1.5rem;margin-bottom:0.75rem">🔑</div>
+          <h3 style="margin-bottom:0.75rem">Indsæt din GNews API-nøgle</h3>
+          <p style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.7">
+            Gå til <strong style="color:var(--text)">gnews.io</strong> → opret gratis konto → kopiér din API-nøgle herunder.
+          </p>
+          <div style="display:flex;gap:0.75rem">
+            <input type="text" id="news-api-input" placeholder="Din GNews API-nøgle..." style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace;font-size:0.82rem;padding:0.65rem 1rem;outline:none">
+            <button class="action-btn" onclick="saveNewsApiKey()">Gem nøgle</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nyheder indhold -->
+      <div id="news-content" style="display:none">
+        <!-- Emne-tabs -->
+        <div class="tab-row" id="news-tabs">
+          <button class="tab-btn active" onclick="setNewsTopic('breaking',this)">🔴 Breaking</button>
+          <button class="tab-btn" onclick="setNewsTopic('technology',this)">💻 Teknologi</button>
+          <button class="tab-btn" onclick="setNewsTopic('denmark',this)">🇩🇰 Danmark</button>
+          <button class="tab-btn" onclick="setNewsTopic('business',this)">📈 Erhverv</button>
+          <button class="tab-btn" style="margin-left:auto;background:none;border-color:transparent;color:var(--muted)" onclick="refreshNews()">↻ Opdatér</button>
+        </div>
+
+        <!-- Loading -->
+        <div id="news-loading" style="display:none;padding:3rem 0;text-align:center">
+          <div class="spinner" style="margin:0 auto 1rem"></div>
+          <div style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted)">Henter nyheder...</div>
+        </div>
+
+        <!-- Artikel grid -->
+        <div id="news-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.25rem"></div>
+
+        <!-- Ingen resultater -->
+        <div id="news-empty" style="display:none" class="no-data">Ingen nyheder fundet — prøv et andet emne</div>
+
+        <!-- API indstillinger -->
+        <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div style="font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted)">Nyheder fra GNews API · Gratis plan: 100 kald/dag</div>
+          <button onclick="resetNewsApiKey()" style="background:none;border:none;font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted);cursor:pointer;transition:color 0.2s" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted)'">Skift API-nøgle</button>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
