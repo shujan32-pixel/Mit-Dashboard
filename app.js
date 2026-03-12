@@ -1413,6 +1413,14 @@ const NEWS_FEEDS = {
   business:   {
     feeds: ['https://www.dr.dk/nyheder/service/feeds/penge', 'https://feeds.tv2.dk/nyheder/rss'],
     label: 'Erhverv', emoji: '📈'
+  },
+  biler:      {
+    feeds: ['https://www.motor.dk/feed/', 'https://www.bilmagasinet.dk/feed/'],
+    label: 'Biler', emoji: '🚗'
+  },
+  hacks:      {
+    feeds: ['https://lifehacker.com/rss', 'https://www.makeuseof.com/feed/'],
+    label: 'Daily Hacks', emoji: '💡'
   }
 };
 
