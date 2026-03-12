@@ -47,6 +47,7 @@
       <button class="nav-item" onclick="showPage('budget',this)"><span class="icon">◧</span><span>Budget</span></button>
       <button class="nav-item" onclick="showPage('nyheder',this)"><span class="icon">📰</span><span>Nyheder</span></button>
       <button class="nav-item" onclick="showPage('noter',this)"><span class="icon">◱</span><span>Noter</span></button>
+      <button class="nav-item" onclick="showPage('review',this)"><span class="icon">📊</span><span>Ugentlig review</span></button>
     </nav>
     <div class="sidebar-footer">
       <div class="user-row">
@@ -76,6 +77,7 @@
         <div class="app-card" onclick="showPage('vaner',document.querySelectorAll('.nav-item')[2])"><span class="app-icon">◈</span><div class="app-name">Vaner</div><div class="app-desc">Daglige vaner, streaks og ugentlig oversigt</div></div>
         <div class="app-card" onclick="showPage('budget',document.querySelectorAll('.nav-item')[3])"><span class="app-icon">◧</span><div class="app-name">Budget</div><div class="app-desc">Indtægter, udgifter og månedsoversigt</div></div>
         <div class="app-card" onclick="showPage('noter',document.querySelectorAll('.nav-item')[5])"><span class="app-icon">◱</span><div class="app-name">Noter</div><div class="app-desc">Hurtige noter og tjeklister</div></div>
+        <div class="app-card" onclick="showPage('review',document.querySelectorAll('.nav-item')[6])"><span class="app-icon">📊</span><div class="app-name">Ugentlig review</div><div class="app-desc">Ugens overblik — vaner, fokus, budget og mål</div></div>
       </div>
     </div>
 
@@ -647,6 +649,154 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- UGENTLIG REVIEW -->
+    <div class="page" id="page-review">
+      <div class="page-header">
+        <div>
+          <div class="greeting" style="font-size:1.5rem">Ugentlig <span class="name">Review</span></div>
+          <div class="greeting-sub" id="review-week-label">—</div>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <button class="action-btn" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:0.4rem 0.8rem" onclick="reviewChangeWeek(-1)">← Forrige</button>
+          <button class="action-btn" style="padding:0.4rem 0.8rem" onclick="reviewChangeWeek(1)" id="review-next-btn">Næste →</button>
+        </div>
+      </div>
+
+      <!-- SCORE HERO -->
+      <div class="review-score-wrap">
+        <div class="review-score-ring">
+          <svg viewBox="0 0 120 120" width="120" height="120">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--surface2)" stroke-width="10"/>
+            <circle id="review-ring" cx="60" cy="60" r="52" fill="none" stroke="var(--accent)" stroke-width="10"
+              stroke-dasharray="326.7" stroke-dashoffset="326.7"
+              stroke-linecap="round" transform="rotate(-90 60 60)" style="transition:stroke-dashoffset 1s ease"/>
+          </svg>
+          <div class="review-score-center">
+            <div class="review-score-num" id="review-score">—</div>
+            <div class="review-score-lbl">point</div>
+          </div>
+        </div>
+        <div class="review-score-breakdown">
+          <div class="review-score-title" id="review-score-title">Beregner ugens score...</div>
+          <div class="review-pillars">
+            <div class="review-pillar">
+              <div class="review-pillar-icon">◈</div>
+              <div class="review-pillar-label">Vaner</div>
+              <div class="review-pillar-val" id="rpil-vaner">—</div>
+            </div>
+            <div class="review-pillar">
+              <div class="review-pillar-icon">◉</div>
+              <div class="review-pillar-label">Fokus</div>
+              <div class="review-pillar-val" id="rpil-fokus">—</div>
+            </div>
+            <div class="review-pillar">
+              <div class="review-pillar-icon">◧</div>
+              <div class="review-pillar-label">Budget</div>
+              <div class="review-pillar-val" id="rpil-budget">—</div>
+            </div>
+            <div class="review-pillar">
+              <div class="review-pillar-icon">☑</div>
+              <div class="review-pillar-label">To-dos</div>
+              <div class="review-pillar-val" id="rpil-todos">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRID -->
+      <div class="review-grid">
+
+        <!-- VANER -->
+        <div class="review-card">
+          <div class="review-card-title">◈ Vaner denne uge</div>
+          <div id="review-habits-bars" style="display:flex;flex-direction:column;gap:0.6rem;margin-top:0.75rem"></div>
+          <div class="review-week-days" id="review-habit-days" style="margin-top:1rem"></div>
+        </div>
+
+        <!-- FOKUS -->
+        <div class="review-card">
+          <div class="review-card-title">◉ Fokus denne uge</div>
+          <div style="display:flex;gap:1.5rem;margin:1rem 0">
+            <div class="review-big-stat">
+              <div class="review-big-num" id="review-focus-sessions">0</div>
+              <div class="review-big-lbl">sessioner</div>
+            </div>
+            <div class="review-big-stat">
+              <div class="review-big-num" id="review-focus-mins" style="color:var(--accent2)">0</div>
+              <div class="review-big-lbl">minutter</div>
+            </div>
+            <div class="review-big-stat">
+              <div class="review-big-num" id="review-focus-avg" style="color:var(--accent3)">0</div>
+              <div class="review-big-lbl">min/dag</div>
+            </div>
+          </div>
+          <div id="review-focus-days" class="review-week-days"></div>
+          <div id="review-focus-msg" style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);margin-top:0.75rem"></div>
+        </div>
+
+        <!-- BUDGET -->
+        <div class="review-card">
+          <div class="review-card-title">◧ Budget denne uge</div>
+          <div style="display:flex;gap:1.5rem;margin:1rem 0">
+            <div class="review-big-stat">
+              <div class="review-big-num" id="review-income" style="color:var(--accent2)">0</div>
+              <div class="review-big-lbl">ind kr</div>
+            </div>
+            <div class="review-big-stat">
+              <div class="review-big-num" id="review-expense" style="color:var(--danger)">0</div>
+              <div class="review-big-lbl">ud kr</div>
+            </div>
+            <div class="review-big-stat">
+              <div class="review-big-num" id="review-net">0</div>
+              <div class="review-big-lbl">netto kr</div>
+            </div>
+          </div>
+          <div id="review-budget-cats" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.5rem"></div>
+        </div>
+
+        <!-- MÅL -->
+        <div class="review-card">
+          <div class="review-card-title">⭐ Sparemål status</div>
+          <div id="review-goals-list" style="display:flex;flex-direction:column;gap:0.75rem;margin-top:0.75rem"></div>
+        </div>
+
+        <!-- KALENDER DENNE UGE -->
+        <div class="review-card">
+          <div class="review-card-title">📅 Kalender denne uge</div>
+          <div id="review-calendar-list" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.75rem">
+            <div class="mg-empty">Henter kalender...</div>
+          </div>
+        </div>
+
+        <!-- TO-DOS -->
+        <div class="review-card">
+          <div class="review-card-title">☑ To-do overblik</div>
+          <div style="display:flex;gap:1.5rem;margin:1rem 0">
+            <div class="review-big-stat">
+              <div class="review-big-num" id="review-todos-done" style="color:var(--accent2)">0</div>
+              <div class="review-big-lbl">klaret</div>
+            </div>
+            <div class="review-big-stat">
+              <div class="review-big-num" id="review-todos-pending" style="color:var(--accent3)">0</div>
+              <div class="review-big-lbl">mangler</div>
+            </div>
+          </div>
+          <div id="review-todos-list" style="display:flex;flex-direction:column;gap:0.3rem"></div>
+        </div>
+
+      </div>
+
+      <!-- AI REFLEKSION -->
+      <div class="review-card" style="margin-top:1.5rem">
+        <div class="review-card-title">🤖 AI refleksion på din uge</div>
+        <div id="review-ai-text" style="font-family:'DM Mono',monospace;font-size:0.8rem;line-height:1.8;color:var(--text-soft,#ccc);margin-top:0.75rem;min-height:60px">
+          <span style="color:var(--muted)">Tryk på knappen for at få en personlig AI-analyse af din uge →</span>
+        </div>
+        <button class="action-btn" style="margin-top:1rem" onclick="generateReviewAI()" id="review-ai-btn">✨ Analysér min uge</button>
+      </div>
+
     </div>
 
   </main>

@@ -367,3 +367,43 @@
 .weather-hour-icon { font-size:1.2rem; }
 .weather-hour-temp { font-family:'DM Mono',monospace; font-size:0.72rem; font-weight:700; }
 .weather-hour-rain { font-family:'DM Mono',monospace; font-size:0.6rem; color:#60a5fa; }
+
+/* ── UGENTLIG REVIEW ─────────────────────────────────────── */
+.review-score-wrap { display:flex; align-items:center; gap:2rem; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.5rem 2rem; margin-bottom:1.5rem; }
+.review-score-ring { position:relative; flex-shrink:0; }
+.review-score-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.review-score-num { font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:900; }
+.review-score-lbl { font-family:'DM Mono',monospace; font-size:0.6rem; color:var(--muted); }
+.review-score-title { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:800; margin-bottom:1rem; }
+.review-pillars { display:flex; gap:1.25rem; flex-wrap:wrap; }
+.review-pillar { display:flex; flex-direction:column; align-items:center; gap:0.25rem; background:var(--surface2); border-radius:8px; padding:0.6rem 0.9rem; min-width:64px; }
+.review-pillar-icon { font-size:1.1rem; }
+.review-pillar-label { font-family:'DM Mono',monospace; font-size:0.6rem; color:var(--muted); }
+.review-pillar-val { font-family:'DM Mono',monospace; font-size:0.85rem; font-weight:700; }
+.review-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; }
+.review-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1.25rem 1.5rem; }
+.review-card-title { font-family:'Syne',sans-serif; font-size:0.85rem; font-weight:800; letter-spacing:0.03em; }
+.review-big-stat { display:flex; flex-direction:column; gap:0.15rem; }
+.review-big-num { font-family:'Syne',sans-serif; font-size:1.6rem; font-weight:900; }
+.review-big-lbl { font-family:'DM Mono',monospace; font-size:0.62rem; color:var(--muted); }
+.review-week-days { display:flex; gap:0.3rem; }
+.review-day-col { display:flex; flex-direction:column; align-items:center; gap:0.2rem; flex:1; }
+.review-day-name { font-family:'DM Mono',monospace; font-size:0.58rem; color:var(--muted); }
+.review-day-dot { width:28px; height:28px; border-radius:50%; border:2px solid var(--border2); display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-family:'DM Mono',monospace; }
+.review-day-dot.full  { background:var(--accent2); border-color:var(--accent2); color:#000; }
+.review-day-dot.part  { background:var(--accent3); border-color:var(--accent3); color:#000; }
+.review-day-dot.none  { background:var(--surface2); color:var(--muted); }
+.review-day-dot.future{ background:var(--surface); border-style:dashed; color:var(--border2); }
+.review-habit-bar-row { display:grid; grid-template-columns:120px 1fr 40px; gap:0.5rem; align-items:center; }
+.review-habit-bar-name { font-family:'DM Mono',monospace; font-size:0.72rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.review-habit-bar-track { height:6px; background:var(--surface2); border-radius:3px; overflow:hidden; }
+.review-habit-bar-fill { height:100%; border-radius:3px; transition:width 0.8s ease; }
+.review-habit-bar-pct { font-family:'DM Mono',monospace; font-size:0.68rem; color:var(--muted); text-align:right; }
+.review-cal-item { display:flex; gap:0.6rem; align-items:flex-start; padding:0.35rem 0; border-bottom:1px solid var(--border); font-family:'DM Mono',monospace; font-size:0.72rem; }
+.review-cal-time { color:var(--accent); flex-shrink:0; min-width:44px; }
+.review-goal-row { display:flex; flex-direction:column; gap:0.3rem; }
+.review-goal-name { font-family:'DM Mono',monospace; font-size:0.78rem; font-weight:700; }
+.review-goal-track { height:8px; background:var(--surface2); border-radius:4px; overflow:hidden; }
+.review-goal-fill { height:100%; background:var(--accent); border-radius:4px; transition:width 0.8s ease; }
+.review-goal-meta { display:flex; justify-content:space-between; font-family:'DM Mono',monospace; font-size:0.62rem; color:var(--muted); }
+@media (max-width:900px) { .review-grid { grid-template-columns:1fr; } .review-score-wrap { flex-direction:column; text-align:center; } }

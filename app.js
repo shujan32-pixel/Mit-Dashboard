@@ -80,6 +80,7 @@ function showPage(id, btn) {
   if (id === 'morgen') initMorgenPage();
   if (id === 'nyheder') initNews();
   if (id === 'noter') loadNotes();
+  if (id === 'review') { reviewWeekOffset = 0; loadReview(); }
 }
 
 // ── TIMER ─────────────────────────────────────────────────────────
@@ -2050,4 +2051,378 @@ function renderWeather(data) {
     forecastEl.appendChild(col);
     shown++;
   }
+}
+
+// ── UGENTLIG REVIEW ───────────────────────────────────────────────
+let reviewWeekOffset = 0; // 0 = indeværende uge, -1 = forrige uge osv.
+
+function getWeekRange(offset = 0) {
+  const now = new Date();
+  const day = now.getDay(); // 0=søn, 1=man...
+  const diffToMon = (day === 0 ? -6 : 1 - day);
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diffToMon + offset * 7);
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  return { monday, sunday };
+}
+
+function dateToISO(d) { return d.toISOString().split('T')[0]; }
+
+function reviewChangeWeek(dir) {
+  reviewWeekOffset += dir;
+  const nextBtn = document.getElementById('review-next-btn');
+  if (nextBtn) nextBtn.disabled = reviewWeekOffset >= 0;
+  loadReview();
+}
+
+async function loadReview() {
+  const { monday, sunday } = getWeekRange(reviewWeekOffset);
+  const monStr = dateToISO(monday);
+  const sunStr = dateToISO(sunday);
+
+  // Uge-label
+  const opts = { day:'numeric', month:'long' };
+  const lbl = monday.toLocaleDateString('da-DK', opts) + ' – ' + sunday.toLocaleDateString('da-DK', opts);
+  document.getElementById('review-week-label').textContent = 'Uge ' + getWeekNumber(monday) + ' · ' + lbl;
+
+  // Spær næste-knap hvis indeværende uge
+  const nextBtn = document.getElementById('review-next-btn');
+  if (nextBtn) nextBtn.disabled = reviewWeekOffset >= 0;
+
+  await Promise.all([
+    renderReviewHabits(monStr, sunStr, monday),
+    renderReviewFocus(monStr, sunStr, monday),
+    renderReviewBudget(monStr, sunStr),
+    renderReviewGoals(),
+    renderReviewCalendar(monday, sunday),
+    renderReviewTodos(),
+  ]);
+
+  computeReviewScore();
+  document.getElementById('review-ai-btn').textContent = '✨ Analysér min uge';
+  document.getElementById('review-ai-text').innerHTML = '<span style="color:var(--muted)">Tryk på knappen for at få en personlig AI-analyse af din uge →</span>';
+}
+
+function getWeekNumber(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+}
+
+// ── VANER ──
+let reviewHabitData = {};
+async function renderReviewHabits(monStr, sunStr, monday) {
+  const barsEl = document.getElementById('review-habits-bars');
+  const daysEl = document.getElementById('review-habit-days');
+  if (!barsEl || !daysEl) return;
+
+  const days = ['Man','Tir','Ons','Tor','Fre','Lør','Søn'];
+  const today = dateToISO(new Date());
+
+  // Lav dag-søjler
+  daysEl.innerHTML = '';
+  const dayDates = days.map((_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return dateToISO(d);
+  });
+
+  // Brug allerede loadede logs
+  const weekLogs = habitLogs.filter(l => l.log_date >= monStr && l.log_date <= sunStr);
+  const activeHabits = habits.filter(h => isHabitActiveToday(h));
+
+  // Per-dag completion
+  const dayCompletions = dayDates.map(dateStr => {
+    if (dateStr > today) return 'future';
+    const activeOnDay = habits.filter(h => {
+      if (h.frequency === 'daily') return true;
+      if (h.frequency === 'weekdays') { const d = new Date(dateStr); return d.getDay() >= 1 && d.getDay() <= 5; }
+      if (h.frequency === 'specific' && h.freq_days) return h.freq_days.includes(new Date(dateStr).getDay().toString());
+      return true;
+    });
+    if (activeOnDay.length === 0) return 'none';
+    const done = activeOnDay.filter(h => weekLogs.some(l => l.habit_id === h.id && l.log_date === dateStr)).length;
+    const pct = done / activeOnDay.length;
+    return pct >= 1 ? 'full' : pct > 0 ? 'part' : 'none';
+  });
+
+  days.forEach((name, i) => {
+    const col = document.createElement('div');
+    col.className = 'review-day-col';
+    const status = dayCompletions[i];
+    const dot = status === 'future' ? '·' : status === 'full' ? '✓' : status === 'part' ? '~' : '○';
+    col.innerHTML = `<div class="review-day-name">${name}</div><div class="review-day-dot ${status}">${dot}</div>`;
+    daysEl.appendChild(col);
+  });
+
+  // Per-vane bars
+  barsEl.innerHTML = '';
+  activeHabits.forEach(h => {
+    const total = dayDates.filter(d => d <= today).length;
+    const done  = weekLogs.filter(l => l.habit_id === h.id).length;
+    const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+    const color = pct >= 80 ? 'var(--accent2)' : pct >= 50 ? 'var(--accent3)' : 'var(--danger)';
+    const row = document.createElement('div');
+    row.className = 'review-habit-bar-row';
+    row.innerHTML = `
+      <div class="review-habit-bar-name" title="${h.name}">${h.name}</div>
+      <div class="review-habit-bar-track"><div class="review-habit-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <div class="review-habit-bar-pct">${done}/${total}</div>`;
+    barsEl.appendChild(row);
+  });
+
+  // Gem til score
+  const totalPossible = activeHabits.length * dayDates.filter(d => d <= today).length;
+  const totalDone = weekLogs.length;
+  reviewHabitData = { pct: totalPossible > 0 ? Math.round((totalDone / totalPossible) * 100) : 0 };
+  document.getElementById('rpil-vaner').textContent = reviewHabitData.pct + '%';
+}
+
+// ── FOKUS ──
+let reviewFocusData = {};
+async function renderReviewFocus(monStr, sunStr, monday) {
+  const { data: sessions } = await sb.from('focus_sessions')
+    .select('*').eq('user_id', currentUserId)
+    .gte('created_at', monStr).lte('created_at', sunStr + 'T23:59:59');
+
+  const sessionsArr = sessions || [];
+  const totalMins   = sessionsArr.reduce((s, r) => s + (r.duration || 0), 0);
+  const today       = dateToISO(new Date());
+  const daysElapsed = Math.max(1, ['Man','Tir','Ons','Tor','Fre','Lør','Søn']
+    .map((_, i) => { const d = new Date(monday); d.setDate(monday.getDate()+i); return dateToISO(d); })
+    .filter(d => d <= today).length);
+
+  document.getElementById('review-focus-sessions').textContent = sessionsArr.length;
+  document.getElementById('review-focus-mins').textContent     = totalMins;
+  document.getElementById('review-focus-avg').textContent      = Math.round(totalMins / daysElapsed);
+
+  // Dag-søjler
+  const daysEl  = document.getElementById('review-focus-days');
+  const dayNames = ['Man','Tir','Ons','Tor','Fre','Lør','Søn'];
+  daysEl.innerHTML = '';
+  dayNames.forEach((name, i) => {
+    const d = new Date(monday); d.setDate(monday.getDate()+i);
+    const ds = dateToISO(d);
+    const mins = sessionsArr.filter(s => s.created_at.startsWith(ds)).reduce((a,s) => a+(s.duration||0), 0);
+    const status = ds > today ? 'future' : mins >= 50 ? 'full' : mins > 0 ? 'part' : 'none';
+    const label  = ds > today ? '·' : mins > 0 ? mins+'m' : '○';
+    const col    = document.createElement('div');
+    col.className = 'review-day-col';
+    col.innerHTML = `<div class="review-day-name">${name}</div><div class="review-day-dot ${status}" style="font-size:0.55rem">${label}</div>`;
+    daysEl.appendChild(col);
+  });
+
+  const msg = totalMins === 0 ? 'Ingen fokussessioner denne uge.' :
+    totalMins >= 300 ? `Stærk uge! ${totalMins} min samlet fokustid 💪` :
+    `${totalMins} min fokus — prøv at nå 300 min/uge`;
+  document.getElementById('review-focus-msg').textContent = msg;
+
+  reviewFocusData = { sessions: sessionsArr.length, mins: totalMins };
+  const focusScore = Math.min(100, Math.round((totalMins / 300) * 100));
+  document.getElementById('rpil-fokus').textContent = focusScore + '%';
+}
+
+// ── BUDGET ──
+let reviewBudgetData = {};
+async function renderReviewBudget(monStr, sunStr) {
+  const { data: txs } = await sb.from('transactions')
+    .select('*').eq('user_id', currentUserId)
+    .gte('tx_date', monStr).lte('tx_date', sunStr);
+
+  const arr     = txs || [];
+  const income  = arr.filter(t => t.type === 'income').reduce((s,t) => s + Number(t.amount), 0);
+  const expense = arr.filter(t => t.type === 'expense').reduce((s,t) => s + Number(t.amount), 0);
+  const net     = income - expense;
+
+  document.getElementById('review-income').textContent  = income.toLocaleString('da-DK');
+  document.getElementById('review-expense').textContent = expense.toLocaleString('da-DK');
+  const netEl = document.getElementById('review-net');
+  netEl.textContent = (net >= 0 ? '+' : '') + net.toLocaleString('da-DK');
+  netEl.style.color = net >= 0 ? 'var(--accent2)' : 'var(--danger)';
+
+  // Kategori-oversigt
+  const cats = {};
+  arr.filter(t => t.type === 'expense').forEach(t => {
+    cats[t.category] = (cats[t.category] || 0) + Number(t.amount);
+  });
+  const catsEl = document.getElementById('review-budget-cats');
+  catsEl.innerHTML = '';
+  Object.entries(cats).sort((a,b) => b[1]-a[1]).slice(0,5).forEach(([cat, amt]) => {
+    const pct = expense > 0 ? Math.round((amt/expense)*100) : 0;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:1fr auto;gap:0.3rem;font-family:"DM Mono",monospace;font-size:0.72rem;align-items:center';
+    row.innerHTML = `<div>${cat}</div><div style="color:var(--muted)">${amt.toLocaleString('da-DK')} kr · ${pct}%</div>`;
+    catsEl.appendChild(row);
+  });
+  if (arr.length === 0) catsEl.innerHTML = '<div class="mg-empty">Ingen transaktioner denne uge</div>';
+
+  reviewBudgetData = { income, expense, net, txCount: arr.length };
+  const budgetScore = net >= 0 ? 100 : Math.max(0, 100 + Math.round((net / Math.max(1, expense)) * 100));
+  document.getElementById('rpil-budget').textContent = net >= 0 ? '✓' : '–';
+}
+
+// ── MÅL ──
+async function renderReviewGoals() {
+  const { data: goalsData } = await sb.from('goals').select('*').eq('user_id', currentUserId);
+  const listEl = document.getElementById('review-goals-list');
+  if (!listEl) return;
+  const arr = goalsData || [];
+  if (arr.length === 0) { listEl.innerHTML = '<div class="mg-empty">Ingen sparemål oprettet endnu</div>'; return; }
+  listEl.innerHTML = '';
+  arr.sort((a,b) => a.priority - b.priority).forEach(g => {
+    const pct = Math.min(100, Math.round((g.saved_amount / g.target_amount) * 100));
+    const eta = g.monthly_saving > 0 ? Math.ceil((g.target_amount - g.saved_amount) / g.monthly_saving) : null;
+    const row = document.createElement('div');
+    row.className = 'review-goal-row';
+    row.innerHTML = `
+      <div class="review-goal-name">${g.emoji} ${g.name}</div>
+      <div class="review-goal-track"><div class="review-goal-fill" style="width:${pct}%"></div></div>
+      <div class="review-goal-meta">
+        <span>${g.saved_amount.toLocaleString('da-DK')} / ${g.target_amount.toLocaleString('da-DK')} kr</span>
+        <span>${pct}% ${eta ? '· ~'+eta+' mdr' : ''}</span>
+      </div>`;
+    listEl.appendChild(row);
+  });
+}
+
+// ── KALENDER ──
+async function renderReviewCalendar(monday, sunday) {
+  const listEl = document.getElementById('review-calendar-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="mg-empty">Henter...</div>';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        mcp_servers: [{ type: 'url', url: 'https://gcal.mcp.claude.com/mcp', name: 'gcal' }],
+        messages: [{ role: 'user', content:
+          `Hent kalenderbegivenheder fra ${monday.toISOString()} til ${sunday.toISOString()} (tidszone Europe/Copenhagen). ` +
+          `Returner KUN en JSON-array uden kodeblok: [{"title":"...","date":"DD/MM","time":"HH:MM"},...]. ` +
+          `Maks 10 begivenheder. Ekskluder vane-påmindelser. Hvis ingen begivenheder, returner [].`
+        }]
+      })
+    });
+    const data   = await res.json();
+    const text   = (data.content?.find(c => c.type === 'text')?.text || '[]').trim();
+    const clean  = text.replace(/```json|```/g, '').trim();
+    const events = JSON.parse(clean);
+    listEl.innerHTML = '';
+    if (events.length === 0) { listEl.innerHTML = '<div class="mg-empty">Ingen begivenheder denne uge</div>'; return; }
+    events.forEach(ev => {
+      const row = document.createElement('div');
+      row.className = 'review-cal-item';
+      row.innerHTML = `<span class="review-cal-time">${ev.date} ${ev.time || ''}</span><span>${ev.title}</span>`;
+      listEl.appendChild(row);
+    });
+  } catch(e) {
+    listEl.innerHTML = '<div class="mg-empty">Kunne ikke hente kalender</div>';
+  }
+}
+
+// ── TO-DOS ──
+let reviewTodoData = {};
+async function renderReviewTodos() {
+  let todoNotes = notes.filter(n => n.type === 'todo');
+  if (todoNotes.length === 0 && currentUserId) {
+    const { data } = await sb.from('notes').select('*').eq('user_id', currentUserId).eq('type', 'todo');
+    if (data) todoNotes = data;
+  }
+  let done = 0, pending = 0;
+  const listEl = document.getElementById('review-todos-list');
+  if (listEl) listEl.innerHTML = '';
+  todoNotes.forEach(n => {
+    const items = JSON.parse(n.body || '[]');
+    items.forEach(item => {
+      if (item.done) done++; else pending++;
+    });
+    if (listEl && items.length > 0) {
+      const row = document.createElement('div');
+      row.style.cssText = 'font-family:"DM Mono",monospace;font-size:0.72rem;display:flex;justify-content:space-between;padding:0.25rem 0;border-bottom:1px solid var(--border)';
+      const doneCount = items.filter(i=>i.done).length;
+      row.innerHTML = `<span>${n.title}</span><span style="color:var(--muted)">${doneCount}/${items.length}</span>`;
+      listEl.appendChild(row);
+    }
+  });
+  document.getElementById('review-todos-done').textContent    = done;
+  document.getElementById('review-todos-pending').textContent = pending;
+  const total = done + pending;
+  const pct   = total > 0 ? Math.round((done/total)*100) : 0;
+  reviewTodoData = { done, pending, pct };
+  document.getElementById('rpil-todos').textContent = done + '/' + total;
+}
+
+// ── SCORE ──
+function computeReviewScore() {
+  const habitPct  = reviewHabitData.pct  || 0;
+  const focusMins = reviewFocusData.mins || 0;
+  const net       = reviewBudgetData.net;
+  const todoPct   = reviewTodoData.pct   || 0;
+
+  const habitScore  = habitPct;
+  const focusScore  = Math.min(100, Math.round((focusMins / 300) * 100));
+  const budgetScore = net === undefined ? 50 : net >= 0 ? 100 : Math.max(0, 50 + net / 100);
+  const todoScore   = todoPct;
+
+  const total = Math.round((habitScore * 0.35) + (focusScore * 0.30) + (budgetScore * 0.20) + (todoScore * 0.15));
+
+  const ring = document.getElementById('review-ring');
+  const circumference = 326.7;
+  if (ring) ring.style.strokeDashoffset = circumference - (circumference * total / 100);
+
+  document.getElementById('review-score').textContent = total;
+  const title = total >= 85 ? '🏆 Fantastisk uge! Du er i topform.' :
+                total >= 70 ? '💪 Rigtig god uge — hold momentum.' :
+                total >= 50 ? '📈 Okay uge — et par ting kan forbedres.' :
+                              '🌱 Hård uge — ny chance næste uge.';
+  document.getElementById('review-score-title').textContent = title;
+
+  if (ring) ring.style.stroke = total >= 75 ? 'var(--accent2)' : total >= 50 ? 'var(--accent3)' : 'var(--danger)';
+}
+
+// ── AI REFLEKSION ──
+async function generateReviewAI() {
+  const btn = document.getElementById('review-ai-btn');
+  const txt = document.getElementById('review-ai-text');
+  btn.textContent = '⏳ Analyserer...';
+  btn.disabled = true;
+  txt.innerHTML = '<span style="color:var(--muted)">Henter AI-analyse...</span>';
+
+  const { monday, sunday } = getWeekRange(reviewWeekOffset);
+  const weekLabel = `uge ${getWeekNumber(monday)}`;
+
+  const prompt = `Du er en venlig personlig coach. Analyser denne brugers ${weekLabel}:
+- Vaner: ${reviewHabitData.pct || 0}% gennemført
+- Fokus: ${reviewFocusData.sessions || 0} sessioner, ${reviewFocusData.mins || 0} minutter total
+- Budget: ${reviewBudgetData.net >= 0 ? '+' : ''}${reviewBudgetData.net || 0} kr netto (${reviewBudgetData.txCount || 0} transaktioner)
+- To-dos: ${reviewTodoData.done || 0} klaret, ${reviewTodoData.pending || 0} mangler
+
+Giv en kort, ærlig og motiverende refleksion på dansk (maks 5 sætninger). Vær konkret. Fremhæv ét positivt og ét område til forbedring. Brug ikke bullet points.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data   = await res.json();
+    const result = data.content?.find(c => c.type === 'text')?.text || 'Ingen analyse tilgængelig.';
+    txt.style.color = 'var(--text)';
+    txt.textContent = result;
+    btn.textContent = '↺ Analysér igen';
+  } catch(e) {
+    txt.textContent = 'Kunne ikke hente AI-analyse. Prøv igen.';
+    btn.textContent = '✨ Analysér min uge';
+  }
+  btn.disabled = false;
 }
