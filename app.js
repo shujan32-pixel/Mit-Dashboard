@@ -2293,77 +2293,24 @@ async function renderReviewGoals() {
 
 // ── KALENDER ──
 async function renderReviewCalendar(monday, sunday) {
-  const listEl = document.getElementById('review-calendar-list');
-  if (!listEl) return;
-  listEl.innerHTML = '<div class="mg-empty">Henter...</div>';
+  const listEl  = document.getElementById('review-calendar-list');
+  const linkEl  = document.getElementById('review-cal-link');
 
-  const monStr = monday.toISOString().split('T')[0];
-  const sunStr = sunday.toISOString().split('T')[0];
+  // Sæt Google Calendar link til den rigtige uge
+  if (linkEl) {
+    const y = monday.getFullYear();
+    const m = String(monday.getMonth() + 1).padStart(2, '0');
+    const d = String(monday.getDate()).padStart(2, '0');
+    linkEl.href = `https://calendar.google.com/calendar/r/week/${y}/${m}/${d}`;
+  }
 
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        mcp_servers: [{ type: 'url', url: 'https://gcal.mcp.claude.com/mcp', name: 'gcal' }],
-        messages: [{ role: 'user', content:
-          `Hent kalenderbegivenheder fra primær kalender. TimeMin: ${monStr}T00:00:00, TimeMax: ${sunStr}T23:59:59, timeZone: Europe/Copenhagen. ` +
-          `Svar KUN med JSON-array (ingen markdown, ingen forklaring), format: [{"summary":"navn","date":"DD/MM","start":"HH:MM","allDay":false}]. ` +
-          `Maks 15 begivenheder. Ekskluder begivenheder med "Vane-påmindelse" i titlen. Hvis ingen begivenheder, svar med [].`
-        }]
-      })
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      listEl.innerHTML = `<div class="mg-empty">API fejl ${res.status}: ${errText.slice(0,100)}</div>`;
-      return;
-    }
-
-    const data  = await res.json();
-
-    // Tjek for API-niveau fejl
-    if (data.error) {
-      listEl.innerHTML = `<div class="mg-empty">Fejl: ${data.error.message || JSON.stringify(data.error)}</div>`;
-      return;
-    }
-
-    const raw   = data.content?.find(c => c.type === 'text')?.text || '';
-    if (!raw) {
-      listEl.innerHTML = '<div class="mg-empty">Ingen data fra kalender</div>';
-      return;
-    }
-
-    const clean = raw.replace(/```json|```/g, '').trim();
-    let events  = [];
-    try {
-      events = JSON.parse(clean);
-    } catch(parseErr) {
-      // Prøv at finde JSON array i svaret
-      const match = clean.match(/\[[\s\S]*\]/);
-      if (match) {
-        try { events = JSON.parse(match[0]); } catch(e) { events = []; }
-      }
-    }
-
-    listEl.innerHTML = '';
-    if (!Array.isArray(events) || events.length === 0) {
-      listEl.innerHTML = '<div class="mg-empty">Ingen begivenheder denne uge 🎉</div>';
-      return;
-    }
-    events.forEach(ev => {
-      const row = document.createElement('div');
-      row.className = 'review-cal-item';
-      const timeStr = ev.allDay ? 'Heldagsbegivenhed' : (ev.start || '');
-      row.innerHTML = `
-        <span class="review-cal-time">${ev.date || ''} ${timeStr}</span>
-        <span>${ev.summary || 'Unavngivet'}</span>`;
-      listEl.appendChild(row);
-    });
-  } catch(e) {
-    listEl.innerHTML = `<div class="mg-empty">Fejl: ${e.message}</div>`;
+  // Vis info om at kalender kræver Google Calendar direkte
+  if (listEl) {
+    listEl.innerHTML = `
+      <div style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);line-height:1.7">
+        Kalendervisning er ikke tilgængelig direkte i dashboardet.<br>
+        Brug linket nedenfor for at se ugens begivenheder i Google Kalender.
+      </div>`;
   }
 }
 
