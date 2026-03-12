@@ -2097,9 +2097,11 @@ async function loadReview() {
     renderReviewFocus(monStr, sunStr, monday),
     renderReviewBudget(monStr, sunStr),
     renderReviewGoals(),
-    renderReviewCalendar(monday, sunday),
     renderReviewTodos(),
   ]);
+
+  // Kalender køres separat efter de andre er færdige — undgår concurrent request fejl
+  setTimeout(() => renderReviewCalendar(monday, sunday), 300);
 
   computeReviewScore();
   document.getElementById('review-ai-btn').textContent = '✨ Analysér min uge';
