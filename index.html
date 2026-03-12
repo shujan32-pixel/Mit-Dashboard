@@ -512,20 +512,8 @@
         <div class="greeting-sub" id="news-updated">—</div>
       </div>
 
-      <!-- API nøgle mangler -->
-      <div id="news-api-missing" style="display:none">
-        <div class="panel" style="max-width:560px;border-color:var(--accent3)">
-          <div style="font-size:1.5rem;margin-bottom:0.75rem">🔑</div>
-          <h3 style="margin-bottom:0.75rem">Indsæt din GNews API-nøgle</h3>
-          <p style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.7">
-            Gå til <strong style="color:var(--text)">gnews.io</strong> → opret gratis konto → kopiér din API-nøgle herunder.
-          </p>
-          <div style="display:flex;gap:0.75rem">
-            <input type="text" id="news-api-input" placeholder="Din GNews API-nøgle..." style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace;font-size:0.82rem;padding:0.65rem 1rem;outline:none">
-            <button class="action-btn" onclick="saveNewsApiKey()">Gem nøgle</button>
-          </div>
-        </div>
-      </div>
+      <!-- API nøgle panel fjernet — RSS feeds kræver ingen nøgle -->
+      <div id="news-api-missing" style="display:none"></div>
 
       <!-- Nyheder indhold -->
       <div id="news-content" style="display:none">
@@ -552,8 +540,7 @@
 
         <!-- API indstillinger -->
         <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <div style="font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted)">Nyheder fra GNews API · Gratis plan: 100 kald/dag</div>
-          <button onclick="resetNewsApiKey()" style="background:none;border:none;font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted);cursor:pointer;transition:color 0.2s" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted)'">Skift API-nøgle</button>
+          <div style="font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted)">Nyheder fra DR, TV2, TechCrunch via RSS · Opdateres automatisk</div>
         </div>
       </div>
     </div>

@@ -1396,43 +1396,36 @@ function updateHomeStats() {
   balEl.style.color=bal>=0?'var(--accent2)':'var(--danger)';
 }
 // ── NYHEDER ───────────────────────────────────────────────────────
-const GNEWS_TOPICS = {
-  breaking:   { q: 'breaking news', lang: 'da', label: 'Breaking nyheder' },
-  technology: { q: 'technology',    lang: 'en', label: 'Teknologi' },
-  denmark:    { q: 'Danmark',       lang: 'da', label: 'Danmark' },
-  business:   { q: 'økonomi erhverv', lang: 'da', label: 'Erhverv' }
+// RSS feeds via rss2json.com — ingen API-nøgle nødvendig
+const NEWS_FEEDS = {
+  breaking:   {
+    feeds: ['https://www.dr.dk/nyheder/service/feeds/allenyheder', 'https://feeds.tv2.dk/nyheder/rss'],
+    label: 'Breaking nyheder', emoji: '🔴'
+  },
+  technology: {
+    feeds: ['https://techcrunch.com/feed/', 'https://www.theverge.com/rss/index.xml'],
+    label: 'Teknologi', emoji: '💻'
+  },
+  denmark:    {
+    feeds: ['https://www.dr.dk/nyheder/service/feeds/politik', 'https://www.dr.dk/nyheder/service/feeds/indland'],
+    label: 'Danmark', emoji: '🇩🇰'
+  },
+  business:   {
+    feeds: ['https://www.dr.dk/nyheder/service/feeds/penge', 'https://feeds.tv2.dk/nyheder/rss'],
+    label: 'Erhverv', emoji: '📈'
+  }
 };
 
 let currentNewsTopic = 'breaking';
-let newsApiKey = null;
+const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
 
 function initNews() {
-  newsApiKey = localStorage.getItem('gnews_api_key');
-  if (!newsApiKey) {
-    document.getElementById('news-api-missing').style.display = 'block';
-    document.getElementById('news-content').style.display = 'none';
-  } else {
-    document.getElementById('news-api-missing').style.display = 'none';
-    document.getElementById('news-content').style.display = 'block';
-    fetchNews(currentNewsTopic);
-  }
-}
-
-function saveNewsApiKey() {
-  const key = document.getElementById('news-api-input').value.trim();
-  if (!key) return;
-  localStorage.setItem('gnews_api_key', key);
-  newsApiKey = key;
-  document.getElementById('news-api-missing').style.display = 'none';
-  document.getElementById('news-content').style.display = 'block';
+  // Skjul API-nøgle panel — behøves ikke længere
+  const missingEl = document.getElementById('news-api-missing');
+  const contentEl = document.getElementById('news-content');
+  if (missingEl) missingEl.style.display = 'none';
+  if (contentEl) contentEl.style.display = 'block';
   fetchNews(currentNewsTopic);
-}
-
-function resetNewsApiKey() {
-  localStorage.removeItem('gnews_api_key');
-  newsApiKey = null;
-  document.getElementById('news-api-missing').style.display = 'block';
-  document.getElementById('news-content').style.display = 'none';
 }
 
 function setNewsTopic(topic, btn) {
@@ -1442,58 +1435,77 @@ function setNewsTopic(topic, btn) {
   fetchNews(topic);
 }
 
-function refreshNews() {
-  fetchNews(currentNewsTopic);
-}
+function refreshNews() { fetchNews(currentNewsTopic); }
 
 async function fetchNews(topic) {
-  if (!newsApiKey) return;
   const grid    = document.getElementById('news-grid');
   const loading = document.getElementById('news-loading');
   const empty   = document.getElementById('news-empty');
   const updated = document.getElementById('news-updated');
+  if (!grid) return;
 
   grid.style.display    = 'none';
   empty.style.display   = 'none';
   loading.style.display = 'block';
 
-  const { q, lang } = GNEWS_TOPICS[topic] || GNEWS_TOPICS.breaking;
-  const url = `https://gnews.io/api/v4/search?q=${encodeURIComponent(q)}&lang=${lang}&max=9&apikey=${newsApiKey}`;
+  const { feeds } = NEWS_FEEDS[topic] || NEWS_FEEDS.breaking;
 
   try {
-    const res  = await fetch(url);
-    const data = await res.json();
+    // Hent begge feeds parallelt
+    const results = await Promise.allSettled(
+      feeds.map(rss => fetch(RSS2JSON + encodeURIComponent(rss)).then(r => r.json()))
+    );
+
+    // Saml artikler fra alle feeds der lykkedes
+    let articles = [];
+    results.forEach(r => {
+      if (r.status === 'fulfilled' && r.value.items) {
+        articles = articles.concat(r.value.items);
+      }
+    });
 
     loading.style.display = 'none';
 
-    if (data.errors || !data.articles || data.articles.length === 0) {
-      empty.style.display = 'block';
+    if (articles.length === 0) {
+      empty.style.display   = 'block';
+      empty.textContent     = 'Ingen nyheder fundet — prøv igen om lidt';
       return;
     }
+
+    // Sortér efter dato, nyeste først, max 9
+    articles.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+    articles = articles.slice(0, 9);
 
     grid.style.display = 'grid';
     grid.innerHTML = '';
 
-    data.articles.forEach((article, i) => {
+    articles.forEach((article, i) => {
       const card = document.createElement('a');
-      card.className  = 'news-card';
-      card.href       = article.url;
-      card.target     = '_blank';
-      card.rel        = 'noopener noreferrer';
+      card.className = 'news-card';
+      card.href      = article.link;
+      card.target    = '_blank';
+      card.rel       = 'noopener noreferrer';
 
-      const timeAgo   = getTimeAgo(article.publishedAt);
+      const timeAgo    = getTimeAgo(article.pubDate);
       const isBreaking = topic === 'breaking' && i < 2;
-      const imgHtml  = article.image
-        ? `<img class="news-img" src="${article.image}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<div class=news-img-placeholder>📰</div>'">`
+
+      // Prøv thumbnail fra feed, ellers placeholder
+      const img = article.thumbnail || article.enclosure?.link || '';
+      const imgHtml = img
+        ? `<img class="news-img" src="${img}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          + `<div class="news-img-placeholder" style="display:none">📰</div>`
         : `<div class="news-img-placeholder">📰</div>`;
+
+      // Rens beskrivelse for HTML-tags
+      const desc = (article.description || '').replace(/<[^>]*>/g, '').trim().slice(0, 160);
 
       card.innerHTML = `
         ${imgHtml}
         <div class="news-body">
           ${isBreaking ? '<span class="news-breaking-badge">Breaking</span>' : ''}
-          <div class="news-source">${article.source?.name || 'Ukendt kilde'}</div>
+          <div class="news-source">${article.author || new URL(article.link).hostname.replace('www.','')}</div>
           <div class="news-title">${article.title}</div>
-          <div class="news-desc">${article.description || ''}</div>
+          <div class="news-desc">${desc}</div>
           <div class="news-footer">
             <span class="news-time">${timeAgo}</span>
             <span class="news-link">Læs mere →</span>
@@ -1504,21 +1516,21 @@ async function fetchNews(topic) {
     });
 
     const now = new Date();
-    updated.textContent = `Opdateret ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+    if (updated) updated.textContent = `Opdateret ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
 
   } catch(e) {
     loading.style.display = 'none';
     empty.style.display   = 'block';
-    empty.textContent     = 'Fejl ved hentning af nyheder — tjek din API-nøgle';
+    empty.textContent     = 'Kunne ikke hente nyheder — tjek din internetforbindelse';
   }
 }
 
 function getTimeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000);
-  if (diff < 1)   return 'Lige nu';
-  if (diff < 60)  return `${diff} min siden`;
+  if (diff < 1)  return 'Lige nu';
+  if (diff < 60) return `${diff} min siden`;
   const h = Math.floor(diff / 60);
-  if (h < 24)     return `${h} time${h > 1 ? 'r' : ''} siden`;
+  if (h < 24)    return `${h} time${h > 1 ? 'r' : ''} siden`;
   const d = Math.floor(h / 24);
   return `${d} dag${d > 1 ? 'e' : ''} siden`;
 }
