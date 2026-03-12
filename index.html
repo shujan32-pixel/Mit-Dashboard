@@ -186,7 +186,26 @@
   .cat-fill { height:100%; border-radius:2px; background:var(--danger); transition:width 0.4s ease; }
   .no-data { font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--muted); text-align:center; padding:2rem 0; }
 
-  /* GOALS */
+  /* GARDEN */
+  .garden-wrap { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.5rem; margin-bottom:2rem; overflow:hidden; position:relative; }
+  .garden-wrap::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg, rgba(74,222,128,0.04) 0%, rgba(124,109,250,0.04) 100%); pointer-events:none; }
+  .garden-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.25rem; }
+  .garden-title { font-size:1rem; font-weight:800; margin-bottom:0.2rem; }
+  .garden-sub { font-family:'DM Mono',monospace; font-size:0.7rem; color:var(--muted); }
+  .garden-season { font-family:'DM Mono',monospace; font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:0.25rem 0.6rem; }
+  .garden-bed { display:flex; gap:1.5rem; flex-wrap:wrap; min-height:120px; align-items:flex-end; padding:0.5rem 0; }
+  .plant-slot { display:flex; flex-direction:column; align-items:center; gap:0.4rem; cursor:default; }
+  .plant-visual { position:relative; display:flex; align-items:flex-end; justify-content:center; }
+  .plant-svg { transition:all 0.6s ease; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+  .plant-name { font-family:'DM Mono',monospace; font-size:0.62rem; color:var(--muted); text-align:center; max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .plant-streak-badge { font-family:'DM Mono',monospace; font-size:0.6rem; color:var(--accent3); font-weight:700; }
+  .plant-slot.blooming .plant-name { color:var(--accent2); }
+
+  /* NOTIFICATION */
+  #notif-banner { display:none; }
+  #notif-banner.visible { display:flex !important; }
+
+  
   .goal-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.5rem; margin-bottom:1rem; transition:border-color 0.2s; }
   .goal-card:hover { border-color:var(--border2); }
   .goal-header { display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem; }
@@ -324,9 +343,39 @@
 
     <!-- VANER -->
     <div class="page" id="page-vaner">
-      <div class="page-header"><div class="greeting" style="font-size:1.5rem">Mine <span class="name">Vaner</span></div><div class="greeting-sub" id="vaner-date">—</div></div>
+      <div class="page-header">
+        <div class="greeting" style="font-size:1.5rem">Mine <span class="name">Vaner</span></div>
+        <div class="greeting-sub" id="vaner-date">—</div>
+      </div>
+
+      <!-- HAVE -->
+      <div class="garden-wrap" id="garden-wrap">
+        <div class="garden-header">
+          <div>
+            <div class="garden-title">🌱 Din have</div>
+            <div class="garden-sub" id="garden-sub">Fuldfør dine vaner for at få din have til at blomstre</div>
+          </div>
+          <div class="garden-season" id="garden-season">Forår</div>
+        </div>
+        <div class="garden-bed" id="garden-bed"></div>
+      </div>
+
       <div class="two-col">
         <div>
+          <!-- NOTIF BANNER -->
+          <div id="notif-banner" style="display:none;background:rgba(124,109,250,0.1);border:1px solid rgba(124,109,250,0.3);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem">
+            <div style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)">🔔 Daglig påmindelse kl. <strong id="notif-time-label" style="color:var(--text)">07:00</strong></div>
+            <div style="display:flex;align-items:center;gap:0.5rem">
+              <input type="time" id="notif-time" value="07:00" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Mono',monospace;font-size:0.72rem;padding:0.2rem 0.4rem;outline:none">
+              <button class="action-btn" style="padding:0.3rem 0.6rem;font-size:0.7rem" onclick="setDailyReminder()">Gem</button>
+            </div>
+          </div>
+          <div id="notif-enable-btn" style="margin-bottom:1rem">
+            <button onclick="enableNotifications()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.6rem 1rem;color:var(--muted);font-family:'DM Mono',monospace;font-size:0.72rem;cursor:pointer;width:100%;transition:border-color 0.2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+              🔔 Slå daglige påmindelser til
+            </button>
+          </div>
+
           <div class="section-title">I dag</div>
           <div class="habits-list" id="habits-list"><div class="no-data">Ingen vaner endnu — tilføj en!</div></div>
           <div class="week-grid-wrap">
@@ -348,7 +397,15 @@
               </select>
             </div>
             <div class="field" id="habit-unit-field" style="display:none"><label>Enhed</label><input type="text" id="habit-unit" placeholder="fx km, sider, glas"></div>
+            <div class="field"><label>Påmindelsestidspunkt</label><input type="time" id="habit-reminder" value="07:00"></div>
             <button class="action-btn" onclick="addHabit()" style="width:100%;margin-top:0.5rem">Tilføj vane +</button>
+            <div class="login-error" id="habit-error" style="margin-top:0.5rem"></div>
+          </div>
+
+          <div class="panel" style="margin-top:1rem">
+            <h3>🗓 Google Kalender</h3>
+            <p style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);margin-bottom:1rem;line-height:1.6">Nye vaner tilføjes automatisk som tilbagevendende begivenheder i din Google Kalender.</p>
+            <div id="gcal-status" style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--accent2)">✓ Kalender-integration aktiv</div>
           </div>
         </div>
       </div>
@@ -742,6 +799,208 @@ document.getElementById('habit-type').addEventListener('change', function() {
   document.getElementById('habit-unit-field').style.display = this.value==='amount'?'block':'none';
 });
 
+// ── NOTIFIKATIONER ────────────────────────────────────────────────
+let dailyReminderTimeout = null;
+
+async function enableNotifications() {
+  if (!('Notification' in window)) { alert('Din browser understøtter ikke notifikationer.'); return; }
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    document.getElementById('notif-enable-btn').style.display = 'none';
+    document.getElementById('notif-banner').classList.add('visible');
+    scheduleDailyReminder();
+    sendNotification('Påmindelser aktiveret! 🔔', 'Du får nu daglige påmindelser om dine vaner.');
+  }
+}
+
+function setDailyReminder() {
+  const t = document.getElementById('notif-time').value;
+  document.getElementById('notif-time-label').textContent = t;
+  localStorage.setItem('habitReminderTime', t);
+  scheduleDailyReminder();
+  sendNotification('Påmindelse gemt ✅', `Du får besked dagligt kl. ${t}`);
+}
+
+function scheduleDailyReminder() {
+  if (Notification.permission !== 'granted') return;
+  if (dailyReminderTimeout) clearTimeout(dailyReminderTimeout);
+  const saved = localStorage.getItem('habitReminderTime') || '07:00';
+  document.getElementById('notif-time').value = saved;
+  document.getElementById('notif-time-label').textContent = saved;
+  const [h, m] = saved.split(':').map(Number);
+  const now = new Date();
+  const next = new Date(); next.setHours(h, m, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  const ms = next - now;
+  dailyReminderTimeout = setTimeout(() => {
+    const done = habits.filter(hb => habitLogs.some(l => l.habit_id===hb.id && l.log_date===new Date().toISOString().split('T')[0])).length;
+    const total = habits.length;
+    sendNotification(`God morgen! 🌱 Dine vaner venter`, `${done}/${total} vaner klaret i dag — besøg din have!`);
+    scheduleDailyReminder(); // Planlæg næste dag
+  }, ms);
+}
+
+function initNotifications() {
+  if (Notification.permission === 'granted') {
+    document.getElementById('notif-enable-btn').style.display = 'none';
+    document.getElementById('notif-banner').classList.add('visible');
+    scheduleDailyReminder();
+  }
+}
+
+// ── HAVE / GARDEN ─────────────────────────────────────────────────
+// Vækststadier baseret på streak
+// 0 dage = frø, 1-2 = spire, 3-6 = plante, 7-13 = blomst, 14-29 = træ, 30+ = fuldt blomstrende træ
+function getPlantStage(streak) {
+  if (streak === 0) return 0; // frø
+  if (streak <= 2)  return 1; // spire
+  if (streak <= 6)  return 2; // plante
+  if (streak <= 13) return 3; // blomst
+  if (streak <= 29) return 4; // træ
+  return 5;                   // fuldt blomstre
+}
+
+function getPlantSVG(streak, isDoneToday, habitName) {
+  const stage = getPlantStage(streak);
+  // Farve baseret på vanenavn (konsistent farve per vane)
+  const colors = ['#4ade80','#60a5fa','#f97316','#a78bfa','#f472b6','#34d399','#fb923c'];
+  const ci = habitName.split('').reduce((a,c) => a+c.charCodeAt(0), 0) % colors.length;
+  const color = isDoneToday ? colors[ci] : '#2e2e38';
+  const stemColor = isDoneToday ? '#16a34a' : '#1e1e24';
+
+  const svgs = [
+    // Frø
+    `<svg width="40" height="50" viewBox="0 0 40 50" class="plant-svg">
+      <ellipse cx="20" cy="40" rx="8" ry="5" fill="${stemColor}" opacity="0.5"/>
+      <ellipse cx="20" cy="35" rx="6" ry="7" fill="${color}" opacity="${isDoneToday?'0.9':'0.3'}"/>
+    </svg>`,
+    // Spire
+    `<svg width="40" height="60" viewBox="0 0 40 60" class="plant-svg">
+      <rect x="18" y="30" width="4" height="20" rx="2" fill="${stemColor}"/>
+      <ellipse cx="20" cy="28" rx="9" ry="11" fill="${color}" opacity="${isDoneToday?'0.9':'0.4'}"/>
+      <ellipse cx="12" cy="36" rx="7" ry="5" fill="${color}" opacity="${isDoneToday?'0.7':'0.3'}" transform="rotate(-20 12 36)"/>
+    </svg>`,
+    // Plante
+    `<svg width="50" height="70" viewBox="0 0 50 70" class="plant-svg">
+      <rect x="22" y="35" width="5" height="28" rx="2" fill="${stemColor}"/>
+      <ellipse cx="25" cy="30" rx="13" ry="15" fill="${color}" opacity="${isDoneToday?'0.85':'0.35'}"/>
+      <ellipse cx="12" cy="40" rx="10" ry="7" fill="${color}" opacity="${isDoneToday?'0.7':'0.25'}" transform="rotate(-25 12 40)"/>
+      <ellipse cx="38" cy="40" rx="10" ry="7" fill="${color}" opacity="${isDoneToday?'0.7':'0.25'}" transform="rotate(25 38 40)"/>
+    </svg>`,
+    // Blomst
+    `<svg width="55" height="80" viewBox="0 0 55 80" class="plant-svg">
+      <rect x="24" y="42" width="5" height="32" rx="2" fill="${stemColor}"/>
+      <ellipse cx="20" cy="52" rx="10" ry="6" fill="${stemColor}" opacity="0.6" transform="rotate(-30 20 52)"/>
+      <circle cx="27" cy="22" r="10" fill="${isDoneToday?'#fbbf24':'#2e2e38'}" opacity="${isDoneToday?'1':'0.4'}"/>
+      ${[0,60,120,180,240,300].map(a => `<ellipse cx="${27+14*Math.cos(a*Math.PI/180)}" cy="${22+14*Math.sin(a*Math.PI/180)}" rx="7" ry="5" fill="${color}" opacity="${isDoneToday?'0.9':'0.3'}" transform="rotate(${a} ${27+14*Math.cos(a*Math.PI/180)} ${22+14*Math.sin(a*Math.PI/180)})"/>`).join('')}
+    </svg>`,
+    // Træ
+    `<svg width="65" height="90" viewBox="0 0 65 90" class="plant-svg">
+      <rect x="28" y="52" width="8" height="34" rx="3" fill="${stemColor}"/>
+      <ellipse cx="32" cy="38" rx="22" ry="24" fill="${color}" opacity="${isDoneToday?'0.8':'0.3'}"/>
+      <ellipse cx="18" cy="52" rx="15" ry="12" fill="${color}" opacity="${isDoneToday?'0.7':'0.25'}"/>
+      <ellipse cx="46" cy="52" rx="15" ry="12" fill="${color}" opacity="${isDoneToday?'0.7':'0.25'}"/>
+      <ellipse cx="32" cy="22" rx="14" ry="12" fill="${color}" opacity="${isDoneToday?'0.75':'0.2'}"/>
+    </svg>`,
+    // Fuldt blomstrende (30+ streak)
+    `<svg width="70" height="95" viewBox="0 0 70 95" class="plant-svg">
+      <rect x="30" y="55" width="10" height="36" rx="4" fill="${stemColor}"/>
+      <ellipse cx="35" cy="38" rx="26" ry="28" fill="${color}" opacity="${isDoneToday?'0.85':'0.3'}"/>
+      <ellipse cx="18" cy="54" rx="17" ry="13" fill="${color}" opacity="${isDoneToday?'0.75':'0.25'}"/>
+      <ellipse cx="52" cy="54" rx="17" ry="13" fill="${color}" opacity="${isDoneToday?'0.75':'0.25'}"/>
+      <ellipse cx="35" cy="18" rx="16" ry="14" fill="${color}" opacity="${isDoneToday?'0.8':'0.2'}"/>
+      ${isDoneToday ? [0,45,90,135,180,225,270,315].map(a => `<circle cx="${35+30*Math.cos(a*Math.PI/180)}" cy="${38+30*Math.sin(a*Math.PI/180)}" r="3" fill="#fbbf24" opacity="0.8"/>`).join('') : ''}
+    </svg>`
+  ];
+  return svgs[stage];
+}
+
+function renderGarden() {
+  const bed = document.getElementById('garden-bed');
+  const sub = document.getElementById('garden-sub');
+  if (!bed) return;
+  if (habits.length === 0) {
+    bed.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:0.75rem;color:var(--muted);padding:2rem 0">Tilføj din første vane for at plante et frø 🌱</div>';
+    return;
+  }
+  const today = new Date().toISOString().split('T')[0];
+  const doneCount = habits.filter(h => habitLogs.some(l => l.habit_id===h.id && l.log_date===today)).length;
+
+  // Opdater sub-tekst
+  const msgs = [
+    'Fuldfør dine vaner for at få din have til at blomstre 🌱',
+    `${doneCount}/${habits.length} vaner klaret i dag — din have vokser! 🌿`,
+    `Fantastisk! Alle ${habits.length} vaner klaret! Din have blomstrer 🌸`
+  ];
+  sub.textContent = doneCount === 0 ? msgs[0] : doneCount === habits.length ? msgs[2] : msgs[1];
+
+  bed.innerHTML = '';
+  habits.forEach(h => {
+    const streak = getStreak(h.id);
+    const isDone = habitLogs.some(l => l.habit_id===h.id && l.log_date===today);
+    const stage = getPlantStage(streak);
+    const stageNames = ['Frø','Spire','Plante','Blomst','Træ','Blomstrende træ'];
+    const slot = document.createElement('div');
+    slot.className = 'plant-slot' + (stage >= 3 && isDone ? ' blooming' : '');
+    slot.title = `${h.name} — ${stageNames[stage]} (${streak} dages streak)`;
+    slot.innerHTML = `
+      <div class="plant-visual">${getPlantSVG(streak, isDone, h.name)}</div>
+      <div class="plant-name">${h.name}</div>
+      <div class="plant-streak-badge">${streak > 0 ? '🔥'+streak : '—'}</div>
+    `;
+    bed.appendChild(slot);
+  });
+
+  // Sæson
+  const month = new Date().getMonth();
+  const seasons = ['Vinter','Vinter','Forår','Forår','Forår','Sommer','Sommer','Sommer','Efterår','Efterår','Efterår','Vinter'];
+  document.getElementById('garden-season').textContent = seasons[month];
+}
+
+// ── GOOGLE KALENDER INTEGRATION ───────────────────────────────────
+async function addHabitToCalendar(habitName, reminderTime) {
+  const statusEl = document.getElementById('gcal-status');
+  try {
+    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = '⏳ Opretter kalenderbegivenhed...';
+
+    // Brug Claude API til at oprette kalenderbegivenheden via MCP
+    const [h, m] = (reminderTime || '07:00').split(':').map(Number);
+    const today = new Date();
+    const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), h, m, 0);
+    const endDate = new Date(startDate.getTime() + 15 * 60000); // 15 min
+
+    const startISO = startDate.toISOString().replace('.000Z', '+01:00').slice(0,19) + '+01:00';
+    const endISO = endDate.toISOString().replace('.000Z', '+01:00').slice(0,19) + '+01:00';
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        mcp_servers: [{ type: 'url', url: 'https://gcal.mcp.claude.com/mcp', name: 'gcal' }],
+        messages: [{
+          role: 'user',
+          content: `Opret en tilbagevendende daglig kalenderbegivenhed for vanen "${habitName}". 
+Start: ${startISO}, Slut: ${endISO}. 
+Tilføj en popup-påmindelse 5 minutter før.
+Gentagelse: hver dag (RRULE:FREQ=DAILY).
+Beskrivelse: "Daglig vane fra Mit Dashboard 🌱"
+Svar KUN med "OK" når det er gjort.`
+        }]
+      })
+    });
+    const data = await res.json();
+    statusEl.style.color = 'var(--accent2)';
+    statusEl.textContent = `✓ "${habitName}" tilføjet til kalender`;
+  } catch(e) {
+    statusEl.style.color = 'var(--muted)';
+    statusEl.textContent = '⚠ Kalender ikke tilgængelig (offline)';
+  }
+}
+
+// ── HABIT CRUD ────────────────────────────────────────────────────
 async function loadHabits() {
   if (!currentUserId) return;
   const { data: hData } = await sb.from('habits').select('*').eq('user_id',currentUserId).order('created_at');
@@ -749,16 +1008,27 @@ async function loadHabits() {
   const weekStart=getWeekStart();
   const { data: lData } = await sb.from('habit_logs').select('*').eq('user_id',currentUserId).gte('log_date',weekStart);
   if (lData) habitLogs=lData;
-  renderHabits(); renderWeekGrid(); updateHomeStats();
+  renderHabits(); renderWeekGrid(); renderGarden(); updateHomeStats();
+  initNotifications();
 }
 
 async function addHabit() {
   const name=document.getElementById('habit-name').value.trim();
   const type=document.getElementById('habit-type').value;
   const unit=document.getElementById('habit-unit').value.trim();
-  if (!name) return;
+  const reminder=document.getElementById('habit-reminder').value || '07:00';
+  const err=document.getElementById('habit-error');
+  if (!name) { err.textContent='Skriv et navn til vanen.'; return; }
+  err.textContent='';
   const { data } = await sb.from('habits').insert({user_id:currentUserId,name,type,unit:type==='amount'?unit:null}).select().single();
-  if (data) { habits.push(data); document.getElementById('habit-name').value=''; document.getElementById('habit-unit').value=''; renderHabits(); renderWeekGrid(); }
+  if (data) {
+    habits.push(data);
+    document.getElementById('habit-name').value='';
+    document.getElementById('habit-unit').value='';
+    renderHabits(); renderWeekGrid(); renderGarden();
+    // Tilføj til Google Kalender
+    addHabitToCalendar(name, reminder);
+  }
 }
 
 async function toggleHabit(habitId, done, amtId) {
@@ -770,9 +1040,16 @@ async function toggleHabit(habitId, done, amtId) {
   } else {
     const amt = amtId ? (parseFloat(document.getElementById(amtId)?.value)||1) : 1;
     const { data } = await sb.from('habit_logs').insert({user_id:currentUserId,habit_id:habitId,log_date:today,value:amt}).select().single();
-    if (data) habitLogs.push(data);
+    if (data) {
+      habitLogs.push(data);
+      // Streak-celebration
+      const streak = getStreak(habitId) + 1;
+      if ([7, 14, 30, 60, 100].includes(streak)) {
+        setTimeout(() => sendNotification(`🎉 ${streak} dages streak!`, `Din plante blomstrer! Hold det gående 🌸`), 300);
+      }
+    }
   }
-  renderHabits(); renderWeekGrid(); updateHomeStats();
+  renderHabits(); renderWeekGrid(); renderGarden(); updateHomeStats();
 }
 
 async function deleteHabit(habitId) {
@@ -780,7 +1057,7 @@ async function deleteHabit(habitId) {
   await sb.from('habits').delete().eq('id',habitId);
   habits=habits.filter(h=>h.id!==habitId);
   habitLogs=habitLogs.filter(l=>l.habit_id!==habitId);
-  renderHabits(); renderWeekGrid(); updateHomeStats();
+  renderHabits(); renderWeekGrid(); renderGarden(); updateHomeStats();
 }
 
 function getStreak(habitId) {
@@ -812,19 +1089,22 @@ function renderHabits() {
   habits.forEach(h => {
     const log=habitLogs.find(l=>l.habit_id===h.id&&l.log_date===today);
     const done=!!log, streak=getStreak(h.id);
+    const stage=getPlantStage(streak);
+    const stageNames=['🌰 Frø','🌱 Spire','🪴 Plante','🌸 Blomst','🌳 Træ','🌺 Blomstrende'];
     const el=document.createElement('div'); el.className='habit-card'+(done?' done':'');
     const amtId='amt-'+h.id;
+    const stageHtml=`<span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);margin-left:0.25rem">${stageNames[stage]}</span>`;
     if (h.type==='amount') {
       el.innerHTML=`
         <button class="habit-check ${done?'done':''}" onclick="toggleHabit('${h.id}',${done},'${amtId}')">${done?'✓':''}</button>
-        <div class="habit-info"><div class="habit-name ${done?'done':''}">${h.name}</div><div class="habit-meta">${h.unit||'enheder'}</div></div>
+        <div class="habit-info"><div class="habit-name ${done?'done':''}">${h.name}</div><div class="habit-meta">${h.unit||'enheder'} ${stageHtml}</div></div>
         <input class="habit-amount-input" id="${amtId}" type="number" value="${log?log.value:''}" placeholder="0" min="0">
         <span class="habit-streak">${streak>0?'🔥 '+streak:''}</span>
         <button class="habit-delete" onclick="deleteHabit('${h.id}')">✕</button>`;
     } else {
       el.innerHTML=`
         <button class="habit-check ${done?'done':''}" onclick="toggleHabit('${h.id}',${done},null)">${done?'✓':''}</button>
-        <div class="habit-info"><div class="habit-name ${done?'done':''}">${h.name}</div></div>
+        <div class="habit-info"><div class="habit-name ${done?'done':''}">${h.name}</div><div class="habit-meta">${stageHtml}</div></div>
         <span class="habit-streak">${streak>0?'🔥 '+streak:''}</span>
         <button class="habit-delete" onclick="deleteHabit('${h.id}')">✕</button>`;
     }
@@ -850,6 +1130,7 @@ function renderWeekGrid() {
     row.appendChild(lbl); row.appendChild(dots); rows.appendChild(row);
   });
 }
+
 
 // ── BUDGET ────────────────────────────────────────────────────────
 let transactions=[], fixedExpenses=[], budgetChartInst=null;
