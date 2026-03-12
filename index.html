@@ -6,609 +6,240 @@
 <title>Mit Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   :root {
-    --bg: #0a0a0b;
-    --surface: #111114;
-    --surface2: #18181d;
-    --border: #222228;
-    --border2: #2e2e38;
-    --text: #e8e8ed;
-    --muted: #5a5a6e;
-    --accent: #7c6dfa;
-    --accent2: #4ade80;
-    --accent3: #f97316;
-    --danger: #ef4444;
+    --bg: #0a0a0b; --surface: #111114; --surface2: #18181d;
+    --border: #222228; --border2: #2e2e38; --text: #e8e8ed;
+    --muted: #5a5a6e; --accent: #7c6dfa; --accent2: #4ade80;
+    --accent3: #f97316; --danger: #ef4444;
   }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 1000;
-    opacity: 0.4;
-  }
-
-  /* ── LOADING ── */
-  #loading-screen {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .spinner {
-    width: 36px; height: 36px;
-    border: 3px solid var(--border2);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .loading-text {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  /* ── LOGIN ── */
-  #login-screen {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: 2rem;
-  }
-
-  .login-box {
-    width: 100%;
-    max-width: 400px;
-    animation: fadeUp 0.6s ease both;
-  }
-
-  .login-logo {
-    font-size: 2rem;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    margin-bottom: 0.25rem;
-  }
-
-  .login-logo span { color: var(--accent); }
-
-  .login-sub {
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 3rem;
-  }
-
-  .field { margin-bottom: 1rem; }
-
-  .field label {
-    display: block;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 0.5rem;
-  }
-
-  .field input {
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.9rem;
-    padding: 0.75rem 1rem;
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-
-  .field input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(124,109,250,0.15);
-  }
-
-  .login-btn {
-    width: 100%;
-    background: var(--accent);
-    border: none;
-    border-radius: 6px;
-    color: #fff;
-    cursor: pointer;
-    font-family: 'Syne', sans-serif;
-    font-size: 0.9rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    padding: 0.85rem;
-    margin-top: 0.5rem;
-    transition: opacity 0.2s, transform 0.1s;
-    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-  }
-
-  .login-btn:hover { opacity: 0.85; }
-  .login-btn:active { transform: scale(0.98); }
-  .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .login-error {
-    color: var(--danger);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    margin-top: 0.75rem;
-    text-align: center;
-    min-height: 1rem;
-  }
-
-  .login-divider {
-    display: flex; align-items: center; gap: 1rem;
-    margin: 1.5rem 0;
-  }
-
-  .login-divider::before,
-  .login-divider::after {
-    content: ''; flex: 1;
-    height: 1px; background: var(--border);
-  }
-
-  .login-divider span {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.68rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
-  .register-link {
-    text-align: center;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    color: var(--muted);
-    margin-top: 1.5rem;
-  }
-
-  .register-link button {
-    background: none; border: none;
-    color: var(--accent);
-    cursor: pointer;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    text-decoration: underline;
-  }
-
-  /* ── APP ── */
-  #app { display: none; min-height: 100vh; }
-
-  .sidebar {
-    position: fixed;
-    left: 0; top: 0; bottom: 0;
-    width: 220px;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    padding: 2rem 0;
-    z-index: 100;
-  }
-
-  .sidebar-logo {
-    padding: 0 1.5rem 2rem;
-    font-size: 1.25rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 1.5rem;
-  }
-
-  .sidebar-logo span { color: var(--accent); }
-
-  .nav-section { padding: 0 1rem; flex: 1; }
-
-  .nav-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--muted);
-    padding: 0 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.6rem 0.75rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: var(--muted);
-    transition: background 0.15s, color 0.15s;
-    margin-bottom: 2px;
-    border: none;
-    background: none;
-    width: 100%;
-    text-align: left;
-  }
-
-  .nav-item:hover { background: var(--surface2); color: var(--text); }
-  .nav-item.active { background: rgba(124,109,250,0.15); color: var(--accent); }
-  .nav-item:disabled { opacity: 0.4; cursor: default; }
-  .nav-item .icon { font-size: 1rem; width: 1.2rem; text-align: center; }
-
-  .nav-badge {
-    margin-left: auto;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.6rem;
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: 4px;
-    padding: 1px 5px;
-    color: var(--muted);
-  }
-
-  .sidebar-footer {
-    padding: 1.5rem 1rem 0;
-    border-top: 1px solid var(--border);
-  }
-
-  .user-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .avatar {
-    width: 32px; height: 32px;
-    background: var(--accent);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.8rem; font-weight: 700; color: #fff;
-    flex-shrink: 0;
-  }
-
-  .user-info { flex: 1; min-width: 0; }
-  .user-name { font-size: 0.82rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .user-email { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-  .logout-btn {
-    width: 100%;
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--muted);
-    cursor: pointer;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 0.08em;
-    padding: 0.5rem;
-    transition: border-color 0.2s, color 0.2s;
-    text-transform: uppercase;
-  }
-
-  .logout-btn:hover { border-color: var(--danger); color: var(--danger); }
-
-  .main {
-    margin-left: 220px;
-    min-height: 100vh;
-    padding: 2.5rem 3rem;
-  }
-
-  .page { display: none; animation: fadeUp 0.4s ease both; }
-  .page.active { display: block; }
-
-  .page-header { margin-bottom: 2.5rem; }
-
-  .greeting {
-    font-size: 2rem;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 1.1;
-    margin-bottom: 0.35rem;
-  }
-
-  .greeting .name { color: var(--accent); }
-
-  .greeting-sub {
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.78rem;
-    letter-spacing: 0.08em;
-  }
-
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin-bottom: 2.5rem;
-  }
-
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1.5rem;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .stat-card::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-  }
-
-  .stat-card:nth-child(1)::after { background: var(--accent); }
-  .stat-card:nth-child(2)::after { background: var(--accent2); }
-  .stat-card:nth-child(3)::after { background: var(--accent3); }
-
-  .stat-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.68rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 0.75rem;
-  }
-
-  .stat-value {
-    font-size: 2.2rem;
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    line-height: 1;
-    margin-bottom: 0.25rem;
-  }
-
-  .stat-card:nth-child(1) .stat-value { color: var(--accent); }
-  .stat-card:nth-child(2) .stat-value { color: var(--accent2); }
-  .stat-card:nth-child(3) .stat-value { color: var(--accent3); }
-
-  .stat-unit {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    color: var(--muted);
-  }
-
-  .section-title {
-    font-size: 0.7rem;
-    font-family: 'DM Mono', monospace;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 1rem;
-  }
-
-  .apps-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1rem;
-  }
-
-  .app-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1.5rem;
-    cursor: pointer;
-    transition: border-color 0.2s, transform 0.15s, background 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .app-card:hover { border-color: var(--border2); background: var(--surface2); transform: translateY(-2px); }
-  .app-card.coming-soon { opacity: 0.45; cursor: default; }
-  .app-card.coming-soon:hover { transform: none; }
-
-  .app-icon { font-size: 1.8rem; margin-bottom: 1rem; display: block; }
-  .app-name { font-size: 0.92rem; font-weight: 700; margin-bottom: 0.25rem; }
-  .app-desc { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); line-height: 1.5; }
-
-  .soon-tag {
-    position: absolute; top: 1rem; right: 1rem;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.6rem; letter-spacing: 0.1em; color: var(--muted);
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 4px; padding: 2px 6px; text-transform: uppercase;
-  }
-
-  /* ── TIMER ── */
-  .timer-wrapper { display: flex; flex-direction: column; align-items: center; padding-top: 1rem; }
-
-  .timer-ring-svg { transform: rotate(-90deg); }
-  .timer-ring-bg { fill: none; stroke: var(--surface2); stroke-width: 6; }
-  .timer-ring-progress { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
-
-  .timer-text-overlay {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-  }
-
-  .timer-display-wrap { position: relative; margin-bottom: 2.5rem; }
-
-  .timer-time {
-    font-size: 3.5rem; font-weight: 800;
-    letter-spacing: -0.04em;
-    font-family: 'DM Mono', monospace; line-height: 1;
-  }
-
-  .timer-mode-label {
-    font-family: 'DM Mono', monospace; font-size: 0.7rem;
-    letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-top: 0.4rem;
-  }
-
-  .timer-modes { display: flex; gap: 0.5rem; margin-bottom: 2rem; }
-
-  .mode-btn {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 6px; color: var(--muted); cursor: pointer;
-    font-family: 'DM Mono', monospace; font-size: 0.72rem;
-    letter-spacing: 0.08em; padding: 0.45rem 0.9rem;
-    text-transform: uppercase; transition: all 0.2s;
-  }
-
-  .mode-btn.active { background: rgba(124,109,250,0.15); border-color: var(--accent); color: var(--accent); }
-
-  .timer-controls { display: flex; gap: 1rem; align-items: center; margin-bottom: 3rem; }
-
-  .ctrl-btn {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 50%; color: var(--muted); cursor: pointer;
-    font-size: 1rem; width: 48px; height: 48px;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
-  }
-
-  .ctrl-btn:hover { border-color: var(--border2); color: var(--text); }
-
-  .play-btn {
-    background: var(--accent); border: none; color: #fff;
-    width: 64px; height: 64px; font-size: 1.4rem;
-    border-radius: 50%; cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s;
-  }
-
-  .play-btn:hover { opacity: 0.85; }
-  .play-btn:active { transform: scale(0.95); }
-
-  .sessions-log { width: 100%; max-width: 480px; }
-
-  .session-item {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0.75rem 1rem;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; margin-bottom: 0.5rem;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .session-date { font-size: 0.72rem; color: var(--muted); }
-  .session-dur { font-size: 0.82rem; color: var(--accent2); font-weight: 500; }
-  .session-mode { font-size: 0.68rem; color: var(--muted); }
-
-  /* ── ANIMATIONS ── */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 768px) {
-    .sidebar { width: 60px; padding: 1.5rem 0; }
-    .sidebar-logo, .nav-label, .nav-item span:not(.icon), .nav-badge, .user-info, .logout-btn { display: none; }
-    .nav-item { justify-content: center; padding: 0.6rem; }
-    .sidebar-footer { padding: 1rem 0.5rem 0; }
-    .user-row { justify-content: center; }
-    .main { margin-left: 60px; padding: 1.5rem; }
-    .stats-row { grid-template-columns: 1fr; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Syne',sans-serif; min-height:100vh; overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"); pointer-events:none; z-index:1000; opacity:0.4; }
+
+  /* LOADING */
+  #loading-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; flex-direction:column; gap:1rem; }
+  .spinner { width:36px; height:36px; border:3px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .loading-text { font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; }
+
+  /* LOGIN */
+  #login-screen { display:none; align-items:center; justify-content:center; min-height:100vh; padding:2rem; }
+  .login-box { width:100%; max-width:400px; animation:fadeUp 0.6s ease both; }
+  .login-logo { font-size:2rem; font-weight:800; letter-spacing:-0.03em; margin-bottom:0.25rem; }
+  .login-logo span { color:var(--accent); }
+  .login-sub { color:var(--muted); font-family:'DM Mono',monospace; font-size:0.75rem; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:3rem; }
+  .field { margin-bottom:1rem; }
+  .field label { display:block; font-family:'DM Mono',monospace; font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:0.5rem; }
+  .field input, .field select { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:'DM Mono',monospace; font-size:0.9rem; padding:0.75rem 1rem; outline:none; transition:border-color 0.2s, box-shadow 0.2s; }
+  .field input:focus, .field select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,109,250,0.15); }
+  .field select option { background:var(--surface2); }
+  .login-btn { width:100%; background:var(--accent); border:none; border-radius:6px; color:#fff; cursor:pointer; font-family:'Syne',sans-serif; font-size:0.9rem; font-weight:700; letter-spacing:0.05em; padding:0.85rem; margin-top:0.5rem; transition:opacity 0.2s, transform 0.1s; display:flex; align-items:center; justify-content:center; gap:0.5rem; }
+  .login-btn:hover { opacity:0.85; } .login-btn:active { transform:scale(0.98); } .login-btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .login-error { color:var(--danger); font-family:'DM Mono',monospace; font-size:0.75rem; margin-top:0.75rem; text-align:center; min-height:1rem; }
+  .register-link { text-align:center; font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted); margin-top:1.5rem; }
+  .register-link button { background:none; border:none; color:var(--accent); cursor:pointer; font-family:'DM Mono',monospace; font-size:0.72rem; text-decoration:underline; }
+
+  /* APP */
+  #app { display:none; min-height:100vh; }
+  .sidebar { position:fixed; left:0; top:0; bottom:0; width:220px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:2rem 0; z-index:100; }
+  .sidebar-logo { padding:0 1.5rem 2rem; font-size:1.25rem; font-weight:800; letter-spacing:-0.02em; border-bottom:1px solid var(--border); margin-bottom:1.5rem; }
+  .sidebar-logo span { color:var(--accent); }
+  .nav-section { padding:0 1rem; flex:1; overflow-y:auto; }
+  .nav-label { font-family:'DM Mono',monospace; font-size:0.65rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); padding:0 0.5rem; margin-bottom:0.5rem; }
+  .nav-item { display:flex; align-items:center; gap:0.6rem; padding:0.6rem 0.75rem; border-radius:6px; cursor:pointer; font-size:0.88rem; font-weight:600; color:var(--muted); transition:background 0.15s, color 0.15s; margin-bottom:2px; border:none; background:none; width:100%; text-align:left; }
+  .nav-item:hover { background:var(--surface2); color:var(--text); }
+  .nav-item.active { background:rgba(124,109,250,0.15); color:var(--accent); }
+  .nav-item:disabled { opacity:0.4; cursor:default; }
+  .nav-item .icon { font-size:1rem; width:1.2rem; text-align:center; }
+  .nav-badge { margin-left:auto; font-family:'DM Mono',monospace; font-size:0.6rem; background:var(--surface2); border:1px solid var(--border2); border-radius:4px; padding:1px 5px; color:var(--muted); }
+  .sidebar-footer { padding:1.5rem 1rem 0; border-top:1px solid var(--border); }
+  .user-row { display:flex; align-items:center; gap:0.75rem; padding:0.5rem; margin-bottom:0.5rem; }
+  .avatar { width:32px; height:32px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; color:#fff; flex-shrink:0; }
+  .user-info { flex:1; min-width:0; }
+  .user-name { font-size:0.82rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .user-email { font-family:'DM Mono',monospace; font-size:0.62rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .logout-btn { width:100%; background:none; border:1px solid var(--border); border-radius:6px; color:var(--muted); cursor:pointer; font-family:'DM Mono',monospace; font-size:0.7rem; letter-spacing:0.08em; padding:0.5rem; transition:border-color 0.2s, color 0.2s; text-transform:uppercase; }
+  .logout-btn:hover { border-color:var(--danger); color:var(--danger); }
+
+  .main { margin-left:220px; min-height:100vh; padding:2.5rem 3rem; }
+  .page { display:none; animation:fadeUp 0.4s ease both; }
+  .page.active { display:block; }
+  .page-header { margin-bottom:2.5rem; }
+  .greeting { font-size:2rem; font-weight:800; letter-spacing:-0.03em; line-height:1.1; margin-bottom:0.35rem; }
+  .greeting .name { color:var(--accent); }
+  .greeting-sub { color:var(--muted); font-family:'DM Mono',monospace; font-size:0.78rem; letter-spacing:0.08em; }
+
+  .stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:2.5rem; }
+  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1.5rem; position:relative; overflow:hidden; }
+  .stat-card::after { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+  .stat-card:nth-child(1)::after { background:var(--accent); }
+  .stat-card:nth-child(2)::after { background:var(--accent2); }
+  .stat-card:nth-child(3)::after { background:var(--accent3); }
+  .stat-label { font-family:'DM Mono',monospace; font-size:0.68rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:0.75rem; }
+  .stat-value { font-size:2.2rem; font-weight:800; letter-spacing:-0.04em; line-height:1; margin-bottom:0.25rem; }
+  .stat-card:nth-child(1) .stat-value { color:var(--accent); }
+  .stat-card:nth-child(2) .stat-value { color:var(--accent2); }
+  .stat-card:nth-child(3) .stat-value { color:var(--accent3); }
+  .stat-unit { font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted); }
+  .section-title { font-size:0.7rem; font-family:'DM Mono',monospace; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:1rem; }
+
+  .apps-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:1rem; }
+  .app-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1.5rem; cursor:pointer; transition:border-color 0.2s, transform 0.15s, background 0.2s; position:relative; overflow:hidden; }
+  .app-card:hover { border-color:var(--border2); background:var(--surface2); transform:translateY(-2px); }
+  .app-card.coming-soon { opacity:0.45; cursor:default; }
+  .app-card.coming-soon:hover { transform:none; }
+  .app-icon { font-size:1.8rem; margin-bottom:1rem; display:block; }
+  .app-name { font-size:0.92rem; font-weight:700; margin-bottom:0.25rem; }
+  .app-desc { font-family:'DM Mono',monospace; font-size:0.68rem; color:var(--muted); line-height:1.5; }
+  .soon-tag { position:absolute; top:1rem; right:1rem; font-family:'DM Mono',monospace; font-size:0.6rem; letter-spacing:0.1em; color:var(--muted); background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:2px 6px; text-transform:uppercase; }
+
+  /* TIMER */
+  .timer-wrapper { display:flex; flex-direction:column; align-items:center; padding-top:1rem; }
+  .timer-ring-svg { transform:rotate(-90deg); }
+  .timer-ring-bg { fill:none; stroke:var(--surface2); stroke-width:6; }
+  .timer-ring-progress { fill:none; stroke:var(--accent); stroke-width:6; stroke-linecap:round; transition:stroke-dashoffset 1s linear, stroke 0.3s; }
+  .timer-text-overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .timer-display-wrap { position:relative; margin-bottom:2.5rem; }
+  .timer-time { font-size:3.5rem; font-weight:800; letter-spacing:-0.04em; font-family:'DM Mono',monospace; line-height:1; }
+  .timer-mode-label { font-family:'DM Mono',monospace; font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-top:0.4rem; }
+  .timer-modes { display:flex; gap:0.5rem; margin-bottom:2rem; }
+  .mode-btn { background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--muted); cursor:pointer; font-family:'DM Mono',monospace; font-size:0.72rem; letter-spacing:0.08em; padding:0.45rem 0.9rem; text-transform:uppercase; transition:all 0.2s; }
+  .mode-btn.active { background:rgba(124,109,250,0.15); border-color:var(--accent); color:var(--accent); }
+  .timer-controls { display:flex; gap:1rem; align-items:center; margin-bottom:3rem; }
+  .ctrl-btn { background:var(--surface); border:1px solid var(--border); border-radius:50%; color:var(--muted); cursor:pointer; font-size:1rem; width:48px; height:48px; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+  .ctrl-btn:hover { border-color:var(--border2); color:var(--text); }
+  .play-btn { background:var(--accent); border:none; color:#fff; width:64px; height:64px; font-size:1.4rem; border-radius:50%; cursor:pointer; transition:opacity 0.2s, transform 0.1s; }
+  .play-btn:hover { opacity:0.85; } .play-btn:active { transform:scale(0.95); }
+  .sessions-log { width:100%; max-width:480px; }
+  .session-item { display:flex; align-items:center; justify-content:space-between; padding:0.75rem 1rem; background:var(--surface); border:1px solid var(--border); border-radius:8px; margin-bottom:0.5rem; font-family:'DM Mono',monospace; }
+  .session-date { font-size:0.72rem; color:var(--muted); }
+  .session-dur { font-size:0.82rem; color:var(--accent2); font-weight:500; }
+  .session-mode { font-size:0.68rem; color:var(--muted); }
+
+  /* VANER */
+  .two-col { display:grid; grid-template-columns:1fr 340px; gap:2rem; align-items:start; }
+  .habits-list { display:flex; flex-direction:column; gap:0.75rem; }
+  .habit-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1.1rem 1.25rem; display:flex; align-items:center; gap:1rem; transition:border-color 0.2s; }
+  .habit-card.done { border-color:var(--accent2); }
+  .habit-check { width:28px; height:28px; border-radius:50%; border:2px solid var(--border2); background:none; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.9rem; transition:all 0.2s; }
+  .habit-check.done { background:var(--accent2); border-color:var(--accent2); color:#000; }
+  .habit-info { flex:1; min-width:0; }
+  .habit-name { font-size:0.92rem; font-weight:700; margin-bottom:2px; }
+  .habit-name.done { text-decoration:line-through; color:var(--muted); }
+  .habit-meta { font-family:'DM Mono',monospace; font-size:0.68rem; color:var(--muted); }
+  .habit-streak { font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--accent3); font-weight:500; white-space:nowrap; }
+  .habit-amount-input { width:70px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:'DM Mono',monospace; font-size:0.82rem; padding:0.3rem 0.5rem; text-align:center; outline:none; }
+  .habit-amount-input:focus { border-color:var(--accent); }
+  .habit-delete { background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.85rem; padding:0.25rem; transition:color 0.2s; }
+  .habit-delete:hover { color:var(--danger); }
+  .panel { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1.5rem; }
+  .panel h3 { font-size:0.88rem; font-weight:700; margin-bottom:1.25rem; }
+  .action-btn { background:var(--accent); border:none; border-radius:6px; color:#fff; cursor:pointer; font-family:'Syne',sans-serif; font-size:0.82rem; font-weight:700; padding:0.65rem 1.25rem; transition:opacity 0.2s; white-space:nowrap; }
+  .action-btn:hover { opacity:0.85; }
+  .week-grid-wrap { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1.5rem; margin-top:1.5rem; }
+  .week-grid-wrap h3 { font-size:0.88rem; font-weight:700; margin-bottom:1.25rem; }
+  .week-row { display:flex; align-items:center; gap:0.5rem; margin-bottom:0.75rem; }
+  .week-label { font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted); width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .week-dots { display:flex; gap:4px; }
+  .week-dot { width:22px; height:22px; border-radius:4px; background:var(--surface2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:0.6rem; color:var(--muted); font-family:'DM Mono',monospace; }
+  .week-dot.done { background:rgba(74,222,128,0.2); border-color:var(--accent2); color:var(--accent2); }
+  .day-headers { display:flex; gap:0.5rem; margin-bottom:0.5rem; }
+  .day-header { width:22px; text-align:center; font-family:'DM Mono',monospace; font-size:0.6rem; color:var(--muted); }
+
+  /* BUDGET */
+  .budget-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:2rem; }
+  .budget-stat { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1.25rem; position:relative; overflow:hidden; }
+  .budget-stat::after { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+  .budget-stat.income::after { background:var(--accent2); }
+  .budget-stat.expense::after { background:var(--danger); }
+  .budget-stat.balance::after { background:var(--accent); }
+  .budget-stat .blabel { font-family:'DM Mono',monospace; font-size:0.65rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:0.5rem; }
+  .budget-stat .bvalue { font-size:1.8rem; font-weight:800; letter-spacing:-0.04em; }
+  .budget-stat.income .bvalue { color:var(--accent2); }
+  .budget-stat.expense .bvalue { color:var(--danger); }
+  .budget-stat.balance .bvalue { color:var(--accent); }
+  .tab-row { display:flex; gap:0.5rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+  .tab-btn { background:var(--surface); border:1px solid var(--border); border-radius:6px; color:var(--muted); cursor:pointer; font-family:'DM Mono',monospace; font-size:0.72rem; letter-spacing:0.08em; padding:0.45rem 0.9rem; text-transform:uppercase; transition:all 0.2s; }
+  .tab-btn.active { background:rgba(124,109,250,0.15); border-color:var(--accent); color:var(--accent); }
+  .budget-grid { display:grid; grid-template-columns:1fr 1fr; gap:2rem; }
+  .chart-wrap { position:relative; height:220px; }
+  .tx-item { display:flex; align-items:center; gap:0.75rem; padding:0.7rem 0; border-bottom:1px solid var(--border); }
+  .tx-item:last-child { border-bottom:none; }
+  .tx-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .tx-dot.income { background:var(--accent2); } .tx-dot.expense { background:var(--danger); } .tx-dot.fixed { background:var(--accent3); }
+  .tx-info { flex:1; min-width:0; }
+  .tx-name { font-size:0.85rem; font-weight:600; }
+  .tx-cat { font-family:'DM Mono',monospace; font-size:0.65rem; color:var(--muted); }
+  .tx-amount { font-family:'DM Mono',monospace; font-size:0.88rem; font-weight:500; white-space:nowrap; }
+  .tx-amount.income { color:var(--accent2); } .tx-amount.expense { color:var(--danger); } .tx-amount.fixed { color:var(--accent3); }
+  .tx-del { background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.8rem; padding:0.2rem; transition:color 0.2s; }
+  .tx-del:hover { color:var(--danger); }
+  .add-form { display:flex; flex-direction:column; gap:0.75rem; }
+  .form-2col { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; }
+  .cat-bar { margin-bottom:0.85rem; }
+  .cat-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem; }
+  .cat-name-lbl { font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--text); }
+  .cat-amt { font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted); }
+  .cat-track { height:4px; background:var(--surface2); border-radius:2px; overflow:hidden; }
+  .cat-fill { height:100%; border-radius:2px; background:var(--danger); transition:width 0.4s ease; }
+  .no-data { font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--muted); text-align:center; padding:2rem 0; }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+  @media (max-width:900px) { .two-col, .budget-grid { grid-template-columns:1fr; } }
+  @media (max-width:768px) {
+    .sidebar { width:60px; padding:1.5rem 0; }
+    .sidebar-logo, .nav-label, .nav-item span:not(.icon), .nav-badge, .user-info, .logout-btn { display:none; }
+    .nav-item { justify-content:center; padding:0.6rem; }
+    .sidebar-footer { padding:1rem 0.5rem 0; }
+    .user-row { justify-content:center; }
+    .main { margin-left:60px; padding:1.5rem; }
+    .stats-row, .budget-summary { grid-template-columns:1fr; }
   }
 </style>
 </head>
 <body>
 
-<!-- LOADING -->
-<div id="loading-screen">
-  <div class="spinner"></div>
-  <div class="loading-text">Forbinder...</div>
-</div>
+<div id="loading-screen"><div class="spinner"></div><div class="loading-text">Forbinder...</div></div>
 
-<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">Mit<span>.</span>Dashboard</div>
     <div class="login-sub">Personligt arbejdsrum</div>
-
-    <!-- LOGIN FORM -->
     <div id="form-login">
-      <div class="field">
-        <label>E-mail</label>
-        <input type="email" id="login-email" placeholder="din@email.dk" autocomplete="email">
-      </div>
-      <div class="field">
-        <label>Adgangskode</label>
-        <input type="password" id="login-password" placeholder="••••••••">
-      </div>
+      <div class="field"><label>E-mail</label><input type="email" id="login-email" placeholder="din@email.dk" autocomplete="email"></div>
+      <div class="field"><label>Adgangskode</label><input type="password" id="login-password" placeholder="••••••••"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">Log ind →</button>
       <div class="login-error" id="login-error"></div>
-      <div class="register-link">
-        Har du ikke en konto?
-        <button onclick="showRegister()">Opret konto</button>
-      </div>
+      <div class="register-link">Har du ikke en konto? <button onclick="showRegister()">Opret konto</button></div>
     </div>
-
-    <!-- REGISTER FORM -->
     <div id="form-register" style="display:none">
-      <div class="field">
-        <label>E-mail</label>
-        <input type="email" id="reg-email" placeholder="din@email.dk">
-      </div>
-      <div class="field">
-        <label>Adgangskode</label>
-        <input type="password" id="reg-password" placeholder="Mindst 6 tegn">
-      </div>
+      <div class="field"><label>E-mail</label><input type="email" id="reg-email" placeholder="din@email.dk"></div>
+      <div class="field"><label>Adgangskode</label><input type="password" id="reg-password" placeholder="Mindst 6 tegn"></div>
       <button class="login-btn" id="reg-btn" onclick="doRegister()">Opret konto →</button>
       <div class="login-error" id="reg-error"></div>
-      <div class="register-link">
-        Har du allerede en konto?
-        <button onclick="showLogin()">Log ind</button>
-      </div>
+      <div class="register-link">Har du allerede en konto? <button onclick="showLogin()">Log ind</button></div>
     </div>
-
   </div>
 </div>
 
-<!-- APP -->
 <div id="app">
   <aside class="sidebar">
     <div class="sidebar-logo">Mit<span>.</span>DB</div>
     <nav class="nav-section">
       <div class="nav-label">Oversigt</div>
-      <button class="nav-item active" onclick="showPage('home', this)">
-        <span class="icon">⊞</span><span>Hjem</span>
-      </button>
+      <button class="nav-item active" onclick="showPage('home',this)"><span class="icon">⊞</span><span>Hjem</span></button>
       <div class="nav-label" style="margin-top:1.5rem">Apps</div>
-      <button class="nav-item" onclick="showPage('timer', this)">
-        <span class="icon">◉</span><span>Focus Timer</span>
-      </button>
-      <button class="nav-item" disabled>
-        <span class="icon">◈</span><span>Budget</span>
-        <span class="nav-badge">Snart</span>
-      </button>
-      <button class="nav-item" disabled>
-        <span class="icon">◧</span><span>Noter</span>
-        <span class="nav-badge">Snart</span>
-      </button>
+      <button class="nav-item" onclick="showPage('timer',this)"><span class="icon">◉</span><span>Focus Timer</span></button>
+      <button class="nav-item" onclick="showPage('vaner',this)"><span class="icon">◈</span><span>Vaner</span></button>
+      <button class="nav-item" onclick="showPage('budget',this)"><span class="icon">◧</span><span>Budget</span></button>
+      <button class="nav-item" disabled><span class="icon">◱</span><span>Noter</span><span class="nav-badge">Snart</span></button>
     </nav>
     <div class="sidebar-footer">
       <div class="user-row">
         <div class="avatar" id="sidebar-avatar">?</div>
-        <div class="user-info">
-          <div class="user-name" id="sidebar-name">—</div>
-          <div class="user-email" id="sidebar-email">—</div>
-        </div>
+        <div class="user-info"><div class="user-name" id="sidebar-name">—</div><div class="user-email" id="sidebar-email">—</div></div>
       </div>
       <button class="logout-btn" onclick="doLogout()">Log ud</button>
     </div>
@@ -623,72 +254,34 @@
         <div class="greeting-sub" id="greeting-date">—</div>
       </div>
       <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-label">Focus-sessioner i dag</div>
-          <div class="stat-value" id="stat-sessions">0</div>
-          <div class="stat-unit">sessioner</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Total fokustid i dag</div>
-          <div class="stat-value" id="stat-minutes">0</div>
-          <div class="stat-unit">minutter</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Streak</div>
-          <div class="stat-value" id="stat-streak">1</div>
-          <div class="stat-unit">dage i træk</div>
-        </div>
+        <div class="stat-card"><div class="stat-label">Focus-sessioner i dag</div><div class="stat-value" id="stat-sessions">0</div><div class="stat-unit">sessioner</div></div>
+        <div class="stat-card"><div class="stat-label">Vaner klaret i dag</div><div class="stat-value" id="stat-habits">0</div><div class="stat-unit">af <span id="stat-habits-total">0</span></div></div>
+        <div class="stat-card"><div class="stat-label">Månedssaldo</div><div class="stat-value" id="stat-balance">0</div><div class="stat-unit">kr</div></div>
       </div>
       <div class="section-title">Dine apps</div>
       <div class="apps-grid">
-        <div class="app-card" onclick="showPage('timer', document.querySelector('.nav-item:nth-child(3)'))">
-          <span class="app-icon">◉</span>
-          <div class="app-name">Focus Timer</div>
-          <div class="app-desc">Pomodoro-baseret fokustimer med sessionslog</div>
-        </div>
-        <div class="app-card coming-soon">
-          <span class="soon-tag">Snart</span>
-          <span class="app-icon">◈</span>
-          <div class="app-name">Budget</div>
-          <div class="app-desc">Oversigt over indtægter og udgifter</div>
-        </div>
-        <div class="app-card coming-soon">
-          <span class="soon-tag">Snart</span>
-          <span class="app-icon">◧</span>
-          <div class="app-name">Noter</div>
-          <div class="app-desc">Hurtige noter og tjeklister</div>
-        </div>
-        <div class="app-card coming-soon">
-          <span class="soon-tag">Snart</span>
-          <span class="app-icon">◱</span>
-          <div class="app-name">Vaner</div>
-          <div class="app-desc">Daglige vaner og mål</div>
-        </div>
+        <div class="app-card" onclick="showPage('timer',document.querySelectorAll('.nav-item')[1])"><span class="app-icon">◉</span><div class="app-name">Focus Timer</div><div class="app-desc">Pomodoro-baseret fokustimer med sessionslog</div></div>
+        <div class="app-card" onclick="showPage('vaner',document.querySelectorAll('.nav-item')[2])"><span class="app-icon">◈</span><div class="app-name">Vaner</div><div class="app-desc">Daglige vaner, streaks og ugentlig oversigt</div></div>
+        <div class="app-card" onclick="showPage('budget',document.querySelectorAll('.nav-item')[3])"><span class="app-icon">◧</span><div class="app-name">Budget</div><div class="app-desc">Indtægter, udgifter og månedsoversigt</div></div>
+        <div class="app-card coming-soon"><span class="soon-tag">Snart</span><span class="app-icon">◱</span><div class="app-name">Noter</div><div class="app-desc">Hurtige noter og tjeklister</div></div>
       </div>
     </div>
 
-    <!-- FOCUS TIMER -->
+    <!-- TIMER -->
     <div class="page" id="page-timer">
-      <div class="page-header">
-        <div class="greeting" style="font-size:1.5rem">Focus <span class="name">Timer</span></div>
-        <div class="greeting-sub">Pomodoro · dyb fokus · pauser</div>
-      </div>
+      <div class="page-header"><div class="greeting" style="font-size:1.5rem">Focus <span class="name">Timer</span></div><div class="greeting-sub">Pomodoro · dyb fokus · pauser</div></div>
       <div class="timer-wrapper">
         <div class="timer-modes">
-          <button class="mode-btn active" onclick="setMode('focus', this)">Focus</button>
-          <button class="mode-btn" onclick="setMode('short', this)">Kort pause</button>
-          <button class="mode-btn" onclick="setMode('long', this)">Lang pause</button>
+          <button class="mode-btn active" onclick="setMode('focus',this)">Focus</button>
+          <button class="mode-btn" onclick="setMode('short',this)">Kort pause</button>
+          <button class="mode-btn" onclick="setMode('long',this)">Lang pause</button>
         </div>
         <div class="timer-display-wrap">
           <svg class="timer-ring-svg" width="260" height="260" viewBox="0 0 260 260">
             <circle class="timer-ring-bg" cx="130" cy="130" r="115"/>
-            <circle class="timer-ring-progress" id="ring" cx="130" cy="130" r="115"
-              stroke-dasharray="722.6" stroke-dashoffset="0"/>
+            <circle class="timer-ring-progress" id="ring" cx="130" cy="130" r="115" stroke-dasharray="722.6" stroke-dashoffset="0"/>
           </svg>
-          <div class="timer-text-overlay">
-            <div class="timer-time" id="timer-display">25:00</div>
-            <div class="timer-mode-label" id="mode-label">FOKUSTID</div>
-          </div>
+          <div class="timer-text-overlay"><div class="timer-time" id="timer-display">25:00</div><div class="timer-mode-label" id="mode-label">FOKUSTID</div></div>
         </div>
         <div class="timer-controls">
           <button class="ctrl-btn" onclick="resetTimer()">↺</button>
@@ -698,8 +291,110 @@
         <div class="sessions-log">
           <div class="section-title">Dagens sessioner</div>
           <div id="session-list"></div>
-          <div id="no-sessions" style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);text-align:center;padding:1.5rem 0;">
-            Ingen sessioner endnu — start en timer!
+          <div id="no-sessions" style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);text-align:center;padding:1.5rem 0;">Ingen sessioner endnu — start en timer!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VANER -->
+    <div class="page" id="page-vaner">
+      <div class="page-header"><div class="greeting" style="font-size:1.5rem">Mine <span class="name">Vaner</span></div><div class="greeting-sub" id="vaner-date">—</div></div>
+      <div class="two-col">
+        <div>
+          <div class="section-title">I dag</div>
+          <div class="habits-list" id="habits-list"><div class="no-data">Ingen vaner endnu — tilføj en!</div></div>
+          <div class="week-grid-wrap">
+            <h3>Ugeoversigt</h3>
+            <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;padding-left:128px;">
+              <div class="day-headers"><div class="day-header">M</div><div class="day-header">T</div><div class="day-header">O</div><div class="day-header">T</div><div class="day-header">F</div><div class="day-header">L</div><div class="day-header">S</div></div>
+            </div>
+            <div id="week-grid-rows"></div>
+          </div>
+        </div>
+        <div>
+          <div class="panel">
+            <h3>Tilføj vane</h3>
+            <div class="field"><label>Navn</label><input type="text" id="habit-name" placeholder="fx Løb, Meditation..."></div>
+            <div class="field"><label>Type</label>
+              <select id="habit-type">
+                <option value="bool">Ja/Nej (gjort eller ej)</option>
+                <option value="amount">Mængde (fx km, sider)</option>
+              </select>
+            </div>
+            <div class="field" id="habit-unit-field" style="display:none"><label>Enhed</label><input type="text" id="habit-unit" placeholder="fx km, sider, glas"></div>
+            <button class="action-btn" onclick="addHabit()" style="width:100%;margin-top:0.5rem">Tilføj vane +</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUDGET -->
+    <div class="page" id="page-budget">
+      <div class="page-header"><div class="greeting" style="font-size:1.5rem">Mit <span class="name">Budget</span></div><div class="greeting-sub" id="budget-month">—</div></div>
+      <div class="budget-summary">
+        <div class="budget-stat income"><div class="blabel">Indtægter</div><div class="bvalue" id="budget-income">0 kr</div></div>
+        <div class="budget-stat expense"><div class="blabel">Udgifter</div><div class="bvalue" id="budget-expense">0 kr</div></div>
+        <div class="budget-stat balance"><div class="blabel">Saldo</div><div class="bvalue" id="budget-balance">0 kr</div></div>
+      </div>
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="setBudgetTab('oversigt',this)">Oversigt</button>
+        <button class="tab-btn" onclick="setBudgetTab('transaktioner',this)">Transaktioner</button>
+        <button class="tab-btn" onclick="setBudgetTab('faste',this)">Faste udgifter</button>
+        <button class="tab-btn" onclick="setBudgetTab('tilfoej',this)">+ Tilføj</button>
+      </div>
+
+      <div id="btab-oversigt">
+        <div class="budget-grid">
+          <div class="panel"><h3>Månedsoversigt</h3><div class="chart-wrap"><canvas id="budget-chart"></canvas></div></div>
+          <div class="panel"><h3>Udgifter per kategori</h3><div id="category-bars"><div class="no-data">Ingen udgifter endnu</div></div></div>
+        </div>
+      </div>
+      <div id="btab-transaktioner" style="display:none">
+        <div class="panel"><h3>Alle transaktioner <span style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted);font-weight:400" id="tx-month-label"></span></h3><div id="tx-list"><div class="no-data">Ingen transaktioner endnu</div></div></div>
+      </div>
+      <div id="btab-faste" style="display:none">
+        <div class="panel"><h3>Faste udgifter / abonnementer</h3><div id="fixed-list"><div class="no-data">Ingen faste udgifter endnu</div></div></div>
+      </div>
+      <div id="btab-tilfoej" style="display:none">
+        <div class="budget-grid">
+          <div class="panel">
+            <h3>Tilføj transaktion</h3>
+            <div class="add-form">
+              <div class="form-2col">
+                <div class="field"><label>Type</label><select id="tx-type"><option value="expense">Udgift</option><option value="income">Indtægt</option></select></div>
+                <div class="field"><label>Beløb (kr)</label><input type="number" id="tx-amount" placeholder="0"></div>
+              </div>
+              <div class="field"><label>Beskrivelse</label><input type="text" id="tx-name" placeholder="fx Dagligvarer, Løn..."></div>
+              <div class="form-2col">
+                <div class="field"><label>Kategori</label>
+                  <select id="tx-category">
+                    <option>Mad & drikke</option><option>Transport</option><option>Bolig</option>
+                    <option>Underholdning</option><option>Tøj & sko</option><option>Sundhed</option>
+                    <option>Løn</option><option>Andet</option>
+                  </select>
+                </div>
+                <div class="field"><label>Dato</label><input type="date" id="tx-date"></div>
+              </div>
+              <button class="action-btn" onclick="addTransaction()" style="width:100%">Tilføj transaktion +</button>
+              <div class="login-error" id="tx-error"></div>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Tilføj fast udgift</h3>
+            <div class="add-form">
+              <div class="field"><label>Navn</label><input type="text" id="fixed-name" placeholder="fx Netflix, Husleje..."></div>
+              <div class="form-2col">
+                <div class="field"><label>Beløb (kr/md)</label><input type="number" id="fixed-amount" placeholder="0"></div>
+                <div class="field"><label>Kategori</label>
+                  <select id="fixed-category">
+                    <option>Bolig</option><option>Abonnement</option><option>Transport</option>
+                    <option>Forsikring</option><option>Andet</option>
+                  </select>
+                </div>
+              </div>
+              <button class="action-btn" onclick="addFixedExpense()" style="width:100%">Tilføj fast udgift +</button>
+              <div class="login-error" id="fixed-error"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -709,145 +404,77 @@
 </div>
 
 <script>
-// ── SUPABASE INIT ─────────────────────────────────────────────────
+// ── SUPABASE ──────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://tgtvloytglyxaenpfsus.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRndHZsb3l0Z2x5eGFlbnBmc3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNTY2ODMsImV4cCI6MjA4ODgzMjY4M30.NsgDjbwqRzKV-OG-L74ycljtforovq9qYLxOBPiqb9s';
 const { createClient } = supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: {
-    redirectTo: 'https://mit-dashboard.vercel.app'
-  }
-});
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { redirectTo: 'https://mit-dashboard.vercel.app' } });
 
 // ── BOOT ──────────────────────────────────────────────────────────
+let currentUserId = null;
+
 window.addEventListener('load', async () => {
   const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    startApp(session.user);
-  } else {
-    document.getElementById('loading-screen').style.display = 'none';
-    document.getElementById('login-screen').style.display = 'flex';
-  }
+  if (session) startApp(session.user);
+  else { document.getElementById('loading-screen').style.display = 'none'; document.getElementById('login-screen').style.display = 'flex'; }
 });
 
 sb.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_IN' && session) {
-    startApp(session.user);
-  } else if (event === 'SIGNED_OUT') {
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('login-screen').style.display = 'flex';
-  }
+  if (event === 'SIGNED_IN' && session) startApp(session.user);
+  else if (event === 'SIGNED_OUT') { document.getElementById('app').style.display = 'none'; document.getElementById('login-screen').style.display = 'flex'; }
 });
 
 // ── AUTH ──────────────────────────────────────────────────────────
 async function doLogin() {
-  const email    = document.getElementById('login-email').value.trim();
+  const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  const btn      = document.getElementById('login-btn');
-  const err      = document.getElementById('login-error');
-
-  err.textContent = '';
-  btn.disabled = true;
-  btn.textContent = 'Logger ind...';
-
+  const btn = document.getElementById('login-btn'), err = document.getElementById('login-error');
+  err.textContent = ''; btn.disabled = true; btn.textContent = 'Logger ind...';
   const { error } = await sb.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    err.textContent = 'Forkert e-mail eller adgangskode.';
-    btn.disabled = false;
-    btn.textContent = 'Log ind →';
-  }
+  if (error) { err.textContent = 'Forkert e-mail eller adgangskode.'; btn.disabled = false; btn.textContent = 'Log ind →'; }
 }
-
 async function doRegister() {
-  const email    = document.getElementById('reg-email').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
   const password = document.getElementById('reg-password').value;
-  const btn      = document.getElementById('reg-btn');
-  const err      = document.getElementById('reg-error');
-
-  err.textContent = '';
-  btn.disabled = true;
-  btn.textContent = 'Opretter...';
-
+  const btn = document.getElementById('reg-btn'), err = document.getElementById('reg-error');
+  err.textContent = ''; btn.disabled = true; btn.textContent = 'Opretter...';
   const { error } = await sb.auth.signUp({ email, password });
-
-  if (error) {
-    err.textContent = error.message;
-    btn.disabled = false;
-    btn.textContent = 'Opret konto →';
-  } else {
-    err.style.color = 'var(--accent2)';
-    err.textContent = 'Tjek din e-mail og klik på bekræftelseslinket!';
-    btn.disabled = false;
-    btn.textContent = 'Opret konto →';
-  }
+  if (error) { err.textContent = error.message; btn.disabled = false; btn.textContent = 'Opret konto →'; }
+  else { err.style.color = 'var(--accent2)'; err.textContent = 'Tjek din e-mail og bekræft!'; btn.disabled = false; btn.textContent = 'Opret konto →'; }
 }
-
-async function doLogout() {
-  stopTimer();
-  await sb.auth.signOut();
-}
-
-function showRegister() {
-  document.getElementById('form-login').style.display = 'none';
-  document.getElementById('form-register').style.display = 'block';
-}
-
-function showLogin() {
-  document.getElementById('form-register').style.display = 'none';
-  document.getElementById('form-login').style.display = 'block';
-}
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    const regVisible = document.getElementById('form-register').style.display !== 'none';
-    if (regVisible) doRegister(); else doLogin();
-  }
-});
+async function doLogout() { stopTimer(); await sb.auth.signOut(); }
+function showRegister() { document.getElementById('form-login').style.display = 'none'; document.getElementById('form-register').style.display = 'block'; }
+function showLogin() { document.getElementById('form-register').style.display = 'none'; document.getElementById('form-login').style.display = 'block'; }
+document.addEventListener('keydown', e => { if (e.key === 'Enter') { const r = document.getElementById('form-register').style.display !== 'none'; r ? doRegister() : doLogin(); } });
 
 // ── START APP ─────────────────────────────────────────────────────
 function startApp(user) {
   document.getElementById('loading-screen').style.display = 'none';
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-
-  const email   = user.email || '';
-  const name    = email.split('@')[0];
+  const email = user.email || '';
+  const name = email.split('@')[0];
   const display = name.charAt(0).toUpperCase() + name.slice(1);
-
-  document.getElementById('greeting-name').textContent  = display;
-  document.getElementById('sidebar-name').textContent   = display;
-  document.getElementById('sidebar-email').textContent  = email;
+  document.getElementById('greeting-name').textContent = display;
+  document.getElementById('sidebar-name').textContent = display;
+  document.getElementById('sidebar-email').textContent = email;
   document.getElementById('sidebar-avatar').textContent = display.charAt(0).toUpperCase();
-
-  const now    = new Date();
-  const days   = ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
-  const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
-  document.getElementById('greeting-date').textContent =
-    `${days[now.getDay()]} · ${now.getDate()}. ${months[now.getMonth()]} ${now.getFullYear()}`;
-
+  const now = new Date();
+  const days = ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
+  const months = ['januar','februar','marts','april','maj','juni','juli','august','september','oktober','november','december'];
+  document.getElementById('greeting-date').textContent = `${days[now.getDay()]} · ${now.getDate()}. ${months[now.getMonth()]} ${now.getFullYear()}`;
+  document.getElementById('vaner-date').textContent = `${days[now.getDay()]} · ${now.getDate()}. ${months[now.getMonth()]}`;
+  document.getElementById('budget-month').textContent = `${months[now.getMonth()]} ${now.getFullYear()}`;
+  document.getElementById('tx-month-label').textContent = months[now.getMonth()];
+  const dateInput = document.getElementById('tx-date');
+  if (dateInput) dateInput.value = now.toISOString().split('T')[0];
   currentUserId = user.id;
-  loadSessions();
-  requestNotifications();
+  loadSessions(); loadHabits(); loadBudget(); requestNotifications();
 }
 
 // ── NOTIFICATIONS ─────────────────────────────────────────────────
-async function requestNotifications() {
-  if (!('Notification' in window)) return;
-  if (Notification.permission === 'default') {
-    await Notification.requestPermission();
-  }
-}
-
-function sendNotification(title, body) {
-  if (Notification.permission === 'granted') {
-    new Notification(title, {
-      body,
-      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%237c6dfa"/><text y=".9em" x="50%" text-anchor="middle" font-size="60" fill="white">◉</text></svg>',
-      silent: false
-    });
-  }
-}
+async function requestNotifications() { if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission(); }
+function sendNotification(title, body) { if (Notification.permission === 'granted') new Notification(title, { body }); }
 
 // ── NAVIGATION ────────────────────────────────────────────────────
 function showPage(id, btn) {
@@ -855,170 +482,337 @@ function showPage(id, btn) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   if (btn) btn.classList.add('active');
+  if (id === 'budget') setTimeout(renderBudgetChart, 100);
 }
 
 // ── TIMER ─────────────────────────────────────────────────────────
-const MODES = {
-  focus: { label: 'FOKUSTID',   mins: 25, color: '#7c6dfa' },
-  short: { label: 'KORT PAUSE', mins: 5,  color: '#4ade80' },
-  long:  { label: 'LANG PAUSE', mins: 15, color: '#f97316' }
-};
-
-const CIRCUMFERENCE = 722.6;
-let currentMode = 'focus';
-let totalSeconds = 25 * 60;
-let remainingSeconds = totalSeconds;
-let timerInterval = null;
-let isRunning = false;
-let sessions = [];
-let currentUserId = null;
-
-document.getElementById('ring').style.stroke = MODES['focus'].color;
+const MODES = { focus:{label:'FOKUSTID',mins:25,color:'#7c6dfa'}, short:{label:'KORT PAUSE',mins:5,color:'#4ade80'}, long:{label:'LANG PAUSE',mins:15,color:'#f97316'} };
+const CIRC = 722.6;
+let currentMode='focus', totalSec=25*60, remSec=25*60, timerInt=null, isRunning=false, timerSessions=[];
+document.getElementById('ring').style.stroke = MODES.focus.color;
 
 function setMode(mode, btn) {
   if (isRunning) return;
   currentMode = mode;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  totalSeconds = MODES[mode].mins * 60;
-  remainingSeconds = totalSeconds;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+  totalSec = MODES[mode].mins*60; remSec = totalSec;
   document.getElementById('ring').style.stroke = MODES[mode].color;
   document.getElementById('mode-label').textContent = MODES[mode].label;
-  updateDisplay();
-  updateRing();
+  updateDisplay(); updateRing();
 }
-
-function updateDisplay() {
-  const m = Math.floor(remainingSeconds / 60);
-  const s = remainingSeconds % 60;
-  document.getElementById('timer-display').textContent =
-    String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-}
-
-function updateRing() {
-  const pct = remainingSeconds / totalSeconds;
-  document.getElementById('ring').style.strokeDashoffset = CIRCUMFERENCE * (1 - pct);
-}
+function updateDisplay() { const m=Math.floor(remSec/60),s=remSec%60; document.getElementById('timer-display').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
+function updateRing() { document.getElementById('ring').style.strokeDashoffset = CIRC*(1-remSec/totalSec); }
 
 function toggleTimer() {
-  if (isRunning) {
-    clearInterval(timerInterval);
-    isRunning = false;
-    document.getElementById('play-btn').textContent = '▶';
-  } else {
-    isRunning = true;
-    document.getElementById('play-btn').textContent = '⏸';
-    timerInterval = setInterval(() => {
-      remainingSeconds--;
-      updateDisplay();
-      updateRing();
-      if (remainingSeconds <= 0) {
-        clearInterval(timerInterval);
-        isRunning = false;
-        document.getElementById('play-btn').textContent = '▶';
-        if (currentMode === 'focus') {
-          logSession(MODES[currentMode].mins);
-          setTimeout(() => sendNotification('Fokus-session færdig! 🎉', `${MODES.focus.mins} minutter klaret — tag en velfortjent pause.`), 300);
-        } else if (currentMode === 'short') {
-          setTimeout(() => sendNotification('Pause slut ⏰', 'Klar til endnu en fokus-session?'), 300);
-        } else {
-          setTimeout(() => sendNotification('Lang pause slut ⏰', 'Du er klar til at fortsætte!'), 300);
-        }
-        remainingSeconds = totalSeconds;
-        updateDisplay();
-        updateRing();
+  if (isRunning) { clearInterval(timerInt); isRunning=false; document.getElementById('play-btn').textContent='▶'; }
+  else {
+    isRunning=true; document.getElementById('play-btn').textContent='⏸';
+    timerInt = setInterval(() => {
+      remSec--; updateDisplay(); updateRing();
+      if (remSec <= 0) {
+        clearInterval(timerInt); isRunning=false; document.getElementById('play-btn').textContent='▶';
+        if (currentMode==='focus') { logSession(MODES.focus.mins); setTimeout(()=>sendNotification('Fokus-session færdig! 🎉',`${MODES.focus.mins} min klaret — tag en pause.`),300); }
+        else if (currentMode==='short') { setTimeout(()=>sendNotification('Pause slut ⏰','Klar til fokus?'),300); }
+        else { setTimeout(()=>sendNotification('Lang pause slut ⏰','Du er klar!'),300); }
+        remSec=totalSec; updateDisplay(); updateRing();
       }
     }, 1000);
   }
 }
-
-function resetTimer() {
-  stopTimer();
-  remainingSeconds = totalSeconds;
-  updateDisplay();
-  updateRing();
-}
-
-function stopTimer() {
-  clearInterval(timerInterval);
-  isRunning = false;
-  document.getElementById('play-btn').textContent = '▶';
-}
-
+function resetTimer() { stopTimer(); remSec=totalSec; updateDisplay(); updateRing(); }
+function stopTimer() { clearInterval(timerInt); isRunning=false; document.getElementById('play-btn').textContent='▶'; }
 function skipTimer() {
   stopTimer();
-  const elapsed = Math.round((totalSeconds - remainingSeconds) / 60);
-  if (currentMode === 'focus' && elapsed >= 1) {
-    logSession(elapsed);
-    setTimeout(() => sendNotification('Fokus-session gemt! ✅', `${elapsed} minutter registreret.`), 300);
-  }
-  remainingSeconds = totalSeconds;
-  updateDisplay();
-  updateRing();
+  const elapsed = Math.round((totalSec-remSec)/60);
+  if (currentMode==='focus' && elapsed>=1) { logSession(elapsed); setTimeout(()=>sendNotification('Fokus-session gemt! ✅',`${elapsed} min registreret.`),300); }
+  remSec=totalSec; updateDisplay(); updateRing();
 }
 
-// ── SESSIONS (Supabase) ───────────────────────────────────────────
 async function loadSessions() {
   if (!currentUserId) return;
-
   const today = new Date().toISOString().split('T')[0];
-  const { data, error } = await sb
-    .from('focus_sessions')
-    .select('*')
-    .eq('user_id', currentUserId)
-    .gte('created_at', today + 'T00:00:00')
-    .order('created_at', { ascending: false });
-
-  if (!error && data) {
-    sessions = data;
-    renderSessions();
-    updateStats();
-  }
+  const { data } = await sb.from('focus_sessions').select('*').eq('user_id',currentUserId).gte('created_at',today+'T00:00:00').order('created_at',{ascending:false});
+  if (data) { timerSessions=data; renderSessions(); updateHomeStats(); }
 }
-
 async function logSession(minutes) {
   if (!currentUserId) return;
-
-  const { data, error } = await sb.from('focus_sessions').insert({
-    user_id:  currentUserId,
-    duration: minutes,
-    mode:     currentMode,
-  }).select().single();
-
-  if (!error && data) {
-    sessions.unshift(data);
-    renderSessions();
-    updateStats();
-  }
+  const { data } = await sb.from('focus_sessions').insert({user_id:currentUserId,duration:minutes,mode:currentMode}).select().single();
+  if (data) { timerSessions.unshift(data); renderSessions(); updateHomeStats(); }
 }
-
 function renderSessions() {
-  const list = document.getElementById('session-list');
-  const none = document.getElementById('no-sessions');
-  list.innerHTML = '';
-
-  const focusSessions = sessions.filter(s => s.mode === 'focus');
-  none.style.display = focusSessions.length === 0 ? 'block' : 'none';
-
-  sessions.forEach(s => {
-    const time = new Date(s.created_at);
-    const timeStr = time.getHours() + ':' + String(time.getMinutes()).padStart(2, '0');
-    const el = document.createElement('div');
-    el.className = 'session-item';
-    el.innerHTML = `
-      <span class="session-date">${timeStr}</span>
-      <span class="session-dur">${s.duration} min</span>
-      <span class="session-mode">${s.mode === 'focus' ? 'Fokus' : s.mode === 'short' ? 'Kort pause' : 'Lang pause'}</span>
-    `;
+  const list=document.getElementById('session-list'), none=document.getElementById('no-sessions');
+  list.innerHTML='';
+  const focus=timerSessions.filter(s=>s.mode==='focus');
+  none.style.display=focus.length===0?'block':'none';
+  timerSessions.forEach(s => {
+    const t=new Date(s.created_at), ts=t.getHours()+':'+String(t.getMinutes()).padStart(2,'0');
+    const el=document.createElement('div'); el.className='session-item';
+    el.innerHTML=`<span class="session-date">${ts}</span><span class="session-dur">${s.duration} min</span><span class="session-mode">${s.mode==='focus'?'Fokus':s.mode==='short'?'Kort pause':'Lang pause'}</span>`;
     list.appendChild(el);
   });
 }
 
-function updateStats() {
-  const focusSessions = sessions.filter(s => s.mode === 'focus');
-  const totalMins = focusSessions.reduce((sum, s) => sum + s.duration, 0);
-  document.getElementById('stat-sessions').textContent = focusSessions.length;
-  document.getElementById('stat-minutes').textContent  = totalMins;
+// ── VANER ─────────────────────────────────────────────────────────
+let habits=[], habitLogs=[];
+
+document.getElementById('habit-type').addEventListener('change', function() {
+  document.getElementById('habit-unit-field').style.display = this.value==='amount'?'block':'none';
+});
+
+async function loadHabits() {
+  if (!currentUserId) return;
+  const { data: hData } = await sb.from('habits').select('*').eq('user_id',currentUserId).order('created_at');
+  if (hData) habits=hData;
+  const weekStart=getWeekStart();
+  const { data: lData } = await sb.from('habit_logs').select('*').eq('user_id',currentUserId).gte('log_date',weekStart);
+  if (lData) habitLogs=lData;
+  renderHabits(); renderWeekGrid(); updateHomeStats();
+}
+
+async function addHabit() {
+  const name=document.getElementById('habit-name').value.trim();
+  const type=document.getElementById('habit-type').value;
+  const unit=document.getElementById('habit-unit').value.trim();
+  if (!name) return;
+  const { data } = await sb.from('habits').insert({user_id:currentUserId,name,type,unit:type==='amount'?unit:null}).select().single();
+  if (data) { habits.push(data); document.getElementById('habit-name').value=''; document.getElementById('habit-unit').value=''; renderHabits(); renderWeekGrid(); }
+}
+
+async function toggleHabit(habitId, done, amtId) {
+  const today=new Date().toISOString().split('T')[0];
+  const existing=habitLogs.find(l=>l.habit_id===habitId&&l.log_date===today);
+  if (existing) {
+    await sb.from('habit_logs').delete().eq('id',existing.id);
+    habitLogs=habitLogs.filter(l=>l.id!==existing.id);
+  } else {
+    const amt = amtId ? (parseFloat(document.getElementById(amtId)?.value)||1) : 1;
+    const { data } = await sb.from('habit_logs').insert({user_id:currentUserId,habit_id:habitId,log_date:today,value:amt}).select().single();
+    if (data) habitLogs.push(data);
+  }
+  renderHabits(); renderWeekGrid(); updateHomeStats();
+}
+
+async function deleteHabit(habitId) {
+  await sb.from('habit_logs').delete().eq('habit_id',habitId);
+  await sb.from('habits').delete().eq('id',habitId);
+  habits=habits.filter(h=>h.id!==habitId);
+  habitLogs=habitLogs.filter(l=>l.habit_id!==habitId);
+  renderHabits(); renderWeekGrid(); updateHomeStats();
+}
+
+function getStreak(habitId) {
+  let streak=0, d=new Date(); d.setHours(0,0,0,0);
+  while(true) {
+    const ds=d.toISOString().split('T')[0];
+    if (habitLogs.some(l=>l.habit_id===habitId&&l.log_date===ds)) { streak++; d.setDate(d.getDate()-1); } else break;
+  }
+  return streak;
+}
+
+function getWeekStart() {
+  const d=new Date(); d.setHours(0,0,0,0);
+  const day=d.getDay(), diff=day===0?-6:1-day;
+  d.setDate(d.getDate()+diff);
+  return d.toISOString().split('T')[0];
+}
+
+function getWeekDates() {
+  const start=new Date(getWeekStart());
+  return Array.from({length:7},(_,i)=>{ const d=new Date(start); d.setDate(d.getDate()+i); return d.toISOString().split('T')[0]; });
+}
+
+function renderHabits() {
+  const list=document.getElementById('habits-list');
+  const today=new Date().toISOString().split('T')[0];
+  if (habits.length===0) { list.innerHTML='<div class="no-data">Ingen vaner endnu — tilføj en!</div>'; return; }
+  list.innerHTML='';
+  habits.forEach(h => {
+    const log=habitLogs.find(l=>l.habit_id===h.id&&l.log_date===today);
+    const done=!!log, streak=getStreak(h.id);
+    const el=document.createElement('div'); el.className='habit-card'+(done?' done':'');
+    const amtId='amt-'+h.id;
+    if (h.type==='amount') {
+      el.innerHTML=`
+        <button class="habit-check ${done?'done':''}" onclick="toggleHabit('${h.id}',${done},'${amtId}')">${done?'✓':''}</button>
+        <div class="habit-info"><div class="habit-name ${done?'done':''}">${h.name}</div><div class="habit-meta">${h.unit||'enheder'}</div></div>
+        <input class="habit-amount-input" id="${amtId}" type="number" value="${log?log.value:''}" placeholder="0" min="0">
+        <span class="habit-streak">${streak>0?'🔥 '+streak:''}</span>
+        <button class="habit-delete" onclick="deleteHabit('${h.id}')">✕</button>`;
+    } else {
+      el.innerHTML=`
+        <button class="habit-check ${done?'done':''}" onclick="toggleHabit('${h.id}',${done},null)">${done?'✓':''}</button>
+        <div class="habit-info"><div class="habit-name ${done?'done':''}">${h.name}</div></div>
+        <span class="habit-streak">${streak>0?'🔥 '+streak:''}</span>
+        <button class="habit-delete" onclick="deleteHabit('${h.id}')">✕</button>`;
+    }
+    list.appendChild(el);
+  });
+}
+
+function renderWeekGrid() {
+  const rows=document.getElementById('week-grid-rows');
+  const weekDates=getWeekDates();
+  if (habits.length===0) { rows.innerHTML='<div class="no-data">Ingen vaner</div>'; return; }
+  rows.innerHTML='';
+  habits.forEach(h => {
+    const row=document.createElement('div'); row.className='week-row';
+    const lbl=document.createElement('div'); lbl.className='week-label'; lbl.textContent=h.name;
+    const dots=document.createElement('div'); dots.className='week-dots';
+    weekDates.forEach(d => {
+      const done=habitLogs.some(l=>l.habit_id===h.id&&l.log_date===d);
+      const dot=document.createElement('div'); dot.className='week-dot'+(done?' done':'');
+      dot.textContent=done?'✓':'';
+      dots.appendChild(dot);
+    });
+    row.appendChild(lbl); row.appendChild(dots); rows.appendChild(row);
+  });
+}
+
+// ── BUDGET ────────────────────────────────────────────────────────
+let transactions=[], fixedExpenses=[], budgetChartInst=null;
+
+async function loadBudget() {
+  if (!currentUserId) return;
+  const now=new Date();
+  const monthStart=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+  const { data: txData } = await sb.from('transactions').select('*').eq('user_id',currentUserId).gte('tx_date',monthStart).order('tx_date',{ascending:false});
+  if (txData) transactions=txData;
+  const { data: fixData } = await sb.from('fixed_expenses').select('*').eq('user_id',currentUserId).order('created_at');
+  if (fixData) fixedExpenses=fixData;
+  renderBudget(); updateHomeStats();
+}
+
+function renderBudget() {
+  const income=transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const expense=transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const fixed=fixedExpenses.reduce((s,f)=>s+f.amount,0);
+  const total=expense+fixed, balance=income-total;
+  document.getElementById('budget-income').textContent=income.toLocaleString('da-DK')+' kr';
+  document.getElementById('budget-expense').textContent=total.toLocaleString('da-DK')+' kr';
+  const bEl=document.getElementById('budget-balance');
+  bEl.textContent=balance.toLocaleString('da-DK')+' kr';
+  bEl.style.color=balance>=0?'var(--accent2)':'var(--danger)';
+  renderTxList(); renderFixedList(); renderCategoryBars(); updateHomeStats();
+}
+
+function renderTxList() {
+  const list=document.getElementById('tx-list');
+  if (transactions.length===0) { list.innerHTML='<div class="no-data">Ingen transaktioner endnu</div>'; return; }
+  list.innerHTML='';
+  transactions.forEach(t => {
+    const el=document.createElement('div'); el.className='tx-item';
+    el.innerHTML=`<div class="tx-dot ${t.type}"></div><div class="tx-info"><div class="tx-name">${t.name}</div><div class="tx-cat">${t.category} · ${t.tx_date}</div></div><span class="tx-amount ${t.type}">${t.type==='income'?'+':'-'}${t.amount.toLocaleString('da-DK')} kr</span><button class="tx-del" onclick="deleteTx('${t.id}')">✕</button>`;
+    list.appendChild(el);
+  });
+}
+
+function renderFixedList() {
+  const list=document.getElementById('fixed-list');
+  if (fixedExpenses.length===0) { list.innerHTML='<div class="no-data">Ingen faste udgifter endnu</div>'; return; }
+  list.innerHTML='';
+  fixedExpenses.forEach(f => {
+    const el=document.createElement('div'); el.className='tx-item';
+    el.innerHTML=`<div class="tx-dot fixed"></div><div class="tx-info"><div class="tx-name">${f.name}</div><div class="tx-cat">${f.category} · månedligt</div></div><span class="tx-amount fixed">${f.amount.toLocaleString('da-DK')} kr/md</span><button class="tx-del" onclick="deleteFixed('${f.id}')">✕</button>`;
+    list.appendChild(el);
+  });
+}
+
+function renderCategoryBars() {
+  const container=document.getElementById('category-bars'), catMap={};
+  transactions.filter(t=>t.type==='expense').forEach(t=>{ catMap[t.category]=(catMap[t.category]||0)+t.amount; });
+  fixedExpenses.forEach(f=>{ catMap[f.category]=(catMap[f.category]||0)+f.amount; });
+  const cats=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+  if (cats.length===0) { container.innerHTML='<div class="no-data">Ingen udgifter endnu</div>'; return; }
+  const max=cats[0][1]; container.innerHTML='';
+  cats.forEach(([cat,amt]) => {
+    const pct=max>0?(amt/max*100):0;
+    const div=document.createElement('div'); div.className='cat-bar';
+    div.innerHTML=`<div class="cat-head"><span class="cat-name-lbl">${cat}</span><span class="cat-amt">${amt.toLocaleString('da-DK')} kr</span></div><div class="cat-track"><div class="cat-fill" style="width:${pct}%"></div></div>`;
+    container.appendChild(div);
+  });
+}
+
+function renderBudgetChart() {
+  const ctx=document.getElementById('budget-chart'); if (!ctx) return;
+  const monthNames=['Jan','Feb','Mar','Apr','Maj','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+  const now=new Date(); const labels=[], incD=[], expD=[];
+  for (let i=5;i>=0;i--) {
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    labels.push(monthNames[d.getMonth()]);
+    const ms=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    incD.push(transactions.filter(t=>t.type==='income'&&t.tx_date.startsWith(ms)).reduce((s,t)=>s+t.amount,0));
+    expD.push(transactions.filter(t=>t.type==='expense'&&t.tx_date.startsWith(ms)).reduce((s,t)=>s+t.amount,0));
+  }
+  if (budgetChartInst) budgetChartInst.destroy();
+  budgetChartInst=new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets:[
+      {label:'Indtægter',data:incD,backgroundColor:'rgba(74,222,128,0.7)',borderRadius:4},
+      {label:'Udgifter',data:expD,backgroundColor:'rgba(239,68,68,0.7)',borderRadius:4}
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#5a5a6e', font:{family:'DM Mono',size:11} } } },
+      scales:{ x:{ ticks:{color:'#5a5a6e',font:{family:'DM Mono',size:10}}, grid:{color:'#222228'} }, y:{ ticks:{color:'#5a5a6e',font:{family:'DM Mono',size:10}}, grid:{color:'#222228'} } }
+    }
+  });
+}
+
+async function addTransaction() {
+  const type=document.getElementById('tx-type').value;
+  const amount=parseFloat(document.getElementById('tx-amount').value);
+  const name=document.getElementById('tx-name').value.trim();
+  const category=document.getElementById('tx-category').value;
+  const date=document.getElementById('tx-date').value;
+  const err=document.getElementById('tx-error');
+  if (!name||!amount||!date) { err.textContent='Udfyld alle felter.'; return; }
+  err.textContent='';
+  const { data } = await sb.from('transactions').insert({user_id:currentUserId,type,amount,name,category,tx_date:date}).select().single();
+  if (data) { transactions.unshift(data); document.getElementById('tx-amount').value=''; document.getElementById('tx-name').value=''; renderBudget(); renderBudgetChart(); }
+}
+
+async function addFixedExpense() {
+  const name=document.getElementById('fixed-name').value.trim();
+  const amount=parseFloat(document.getElementById('fixed-amount').value);
+  const category=document.getElementById('fixed-category').value;
+  const err=document.getElementById('fixed-error');
+  if (!name||!amount) { err.textContent='Udfyld navn og beløb.'; return; }
+  err.textContent='';
+  const { data } = await sb.from('fixed_expenses').insert({user_id:currentUserId,name,amount,category}).select().single();
+  if (data) { fixedExpenses.push(data); document.getElementById('fixed-name').value=''; document.getElementById('fixed-amount').value=''; renderBudget(); }
+}
+
+async function deleteTx(id) {
+  await sb.from('transactions').delete().eq('id',id);
+  transactions=transactions.filter(t=>t.id!==id);
+  renderBudget(); renderBudgetChart();
+}
+
+async function deleteFixed(id) {
+  await sb.from('fixed_expenses').delete().eq('id',id);
+  fixedExpenses=fixedExpenses.filter(f=>f.id!==id);
+  renderBudget();
+}
+
+function setBudgetTab(tab, btn) {
+  ['oversigt','transaktioner','faste','tilfoej'].forEach(t => document.getElementById('btab-'+t).style.display=t===tab?'block':'none');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  if (tab==='oversigt') setTimeout(renderBudgetChart,100);
+}
+
+// ── HOME STATS ────────────────────────────────────────────────────
+function updateHomeStats() {
+  document.getElementById('stat-sessions').textContent=timerSessions.filter(s=>s.mode==='focus').length;
+  const today=new Date().toISOString().split('T')[0];
+  const done=habits.filter(h=>habitLogs.some(l=>l.habit_id===h.id&&l.log_date===today)).length;
+  document.getElementById('stat-habits').textContent=done;
+  document.getElementById('stat-habits-total').textContent=habits.length;
+  const inc=transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const exp=transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const fix=fixedExpenses.reduce((s,f)=>s+f.amount,0);
+  const bal=inc-exp-fix;
+  const balEl=document.getElementById('stat-balance');
+  balEl.textContent=bal.toLocaleString('da-DK');
+  balEl.style.color=bal>=0?'var(--accent2)':'var(--danger)';
 }
 </script>
 </body>
