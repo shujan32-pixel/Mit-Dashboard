@@ -1635,36 +1635,6 @@ function scheduleSave() {
   document.getElementById('note-saved-status').textContent = 'Gemmer...';
 }
 
-async function saveCurrentNote() {
-  if (!currentNoteId) return;
-  const n = notes.find(n => n.id === currentNoteId);
-  if (!n) return;
-
-  const title = document.getElementById('note-title-input').value;
-  const color = document.getElementById('note-color-select').value;
-  let body = n.body;
-
-  if (n.type === 'note') {
-    body = document.getElementById('note-body-input').value;
-  } else {
-    // hent todo-items fra DOM
-    const items = [...document.querySelectorAll('.todo-item')].map(el => ({
-      text: el.querySelector('.todo-text').value,
-      done: el.querySelector('.todo-check').classList.contains('done')
-    }));
-    body = JSON.stringify(items);
-  }
-
-  const { data } = await sb.from('notes').update({ title, body, color, updated_at: new Date().toISOString() }).eq('id', currentNoteId).select().single();
-  if (data) {
-    const idx = notes.findIndex(n => n.id === currentNoteId);
-    if (idx !== -1) notes[idx] = data;
-    notes.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
-    document.getElementById('note-saved-status').textContent = 'Gemt ' + new Date().toLocaleTimeString('da-DK', { hour:'2-digit', minute:'2-digit' });
-    renderNotesList();
-  }
-}
-
 async function newNote() {
   const { data } = await sb.from('notes').insert({ user_id: currentUserId, type: 'note', title: 'Ny note', body: '', color: 'default' }).select().single();
   if (data) { notes.unshift(data); renderNotesList(); openNote(data.id); }
@@ -1856,8 +1826,6 @@ function addTodoItem() {
   scheduleSave();
 }
 
-// Overskriver saveCurrentNote til at inkludere calEventId
-const _origSave = saveCurrentNote;
 async function saveCurrentNote() {
   if (!currentNoteId) return;
   const n = notes.find(n => n.id === currentNoteId);

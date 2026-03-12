@@ -46,7 +46,7 @@
       <button class="nav-item" onclick="showPage('vaner',this)"><span class="icon">◈</span><span>Vaner</span></button>
       <button class="nav-item" onclick="showPage('budget',this)"><span class="icon">◧</span><span>Budget</span></button>
       <button class="nav-item" onclick="showPage('nyheder',this)"><span class="icon">📰</span><span>Nyheder</span></button>
-      <button class="nav-item" disabled><span class="icon">◱</span><span>Noter</span><span class="nav-badge">Snart</span></button>
+      <button class="nav-item" onclick="showPage('noter',this)"><span class="icon">◱</span><span>Noter</span></button>
     </nav>
     <div class="sidebar-footer">
       <div class="user-row">
@@ -543,6 +543,72 @@
         <!-- API indstillinger -->
         <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div style="font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted)">Nyheder fra DR, TV2, TechCrunch via RSS · Opdateres automatisk</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTER -->
+    <div class="page" id="page-noter">
+      <div class="page-header">
+        <div class="greeting" style="font-size:1.5rem">Mine <span class="name">Noter</span></div>
+        <div class="greeting-sub">Hurtige tanker, to-dos og idéer</div>
+      </div>
+
+      <div class="notes-layout">
+        <!-- Venstre: liste over noter -->
+        <div class="notes-sidebar">
+          <div style="display:flex;gap:0.5rem;margin-bottom:1rem">
+            <button class="action-btn" style="flex:1" onclick="newNote()">+ Ny note</button>
+            <button class="action-btn" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text)" onclick="newTodo()">☑ Ny to-do</button>
+          </div>
+          <input type="text" id="notes-search" placeholder="Søg i noter..." oninput="filterNotes()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace;font-size:0.8rem;padding:0.6rem 0.9rem;outline:none;margin-bottom:1rem">
+          <div class="notes-filter-row">
+            <button class="notes-filter active" onclick="setNotesFilter('all',this)">Alle</button>
+            <button class="notes-filter" onclick="setNotesFilter('note',this)">📝 Noter</button>
+            <button class="notes-filter" onclick="setNotesFilter('todo',this)">☑ To-dos</button>
+          </div>
+          <div id="notes-list"><div class="no-data">Ingen noter endnu</div></div>
+        </div>
+
+        <!-- Højre: editor -->
+        <div class="notes-editor" id="notes-editor">
+          <div id="note-empty-state" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--muted);gap:1rem">
+            <div style="font-size:3rem">◱</div>
+            <div style="font-family:'DM Mono',monospace;font-size:0.8rem">Vælg en note eller opret en ny</div>
+          </div>
+
+          <div id="note-edit-area" style="display:none;height:100%;flex-direction:column">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.25rem">
+              <input type="text" id="note-title-input" placeholder="Titel..." style="flex:1;background:transparent;border:none;border-bottom:2px solid var(--border2);color:var(--text);font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;padding:0.25rem 0;outline:none">
+              <select id="note-color-select" onchange="updateNoteColor()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace;font-size:0.72rem;padding:0.3rem 0.5rem;outline:none">
+                <option value="default">⬜ Standard</option>
+                <option value="purple">🟣 Lilla</option>
+                <option value="green">🟢 Grøn</option>
+                <option value="orange">🟠 Orange</option>
+                <option value="red">🔴 Rød</option>
+              </select>
+              <button onclick="deleteCurrentNote()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0.25rem;transition:color 0.2s" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted)'">🗑</button>
+            </div>
+
+            <!-- NOTE indhold -->
+            <div id="note-content-area" style="flex:1;overflow-y:auto">
+              <textarea id="note-body-input" placeholder="Skriv din note her..." style="width:100%;height:100%;min-height:400px;background:transparent;border:none;color:var(--text);font-family:'DM Mono',monospace;font-size:0.88rem;line-height:1.8;outline:none;resize:none;padding:0"></textarea>
+            </div>
+
+            <!-- TODO indhold -->
+            <div id="todo-content-area" style="display:none;flex:1;overflow-y:auto">
+              <div id="todo-items-list"></div>
+              <div style="display:flex;gap:0.5rem;margin-top:0.75rem">
+                <input type="text" id="todo-new-item" placeholder="Tilføj punkt..." style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace;font-size:0.82rem;padding:0.5rem 0.75rem;outline:none" onkeydown="if(event.key==='Enter')addTodoItem()">
+                <button class="action-btn" style="padding:0.5rem 0.9rem" onclick="addTodoItem()">+</button>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;padding-top:0.75rem;border-top:1px solid var(--border)">
+              <span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted)" id="note-saved-status">—</span>
+              <button class="action-btn" onclick="saveCurrentNote()" style="padding:0.4rem 1rem;font-size:0.78rem">Gem note</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
