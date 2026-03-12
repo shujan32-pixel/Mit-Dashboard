@@ -2100,8 +2100,7 @@ async function loadReview() {
     renderReviewTodos(),
   ]);
 
-  // Kalender køres separat efter de andre er færdige — undgår concurrent request fejl
-  setTimeout(() => renderReviewCalendar(monday, sunday), 300);
+  // Kalender fjernet — bruges direkte i Google Kalender
 
   computeReviewScore();
   document.getElementById('review-ai-btn').textContent = '✨ Analysér min uge';
@@ -2292,28 +2291,6 @@ async function renderReviewGoals() {
 }
 
 // ── KALENDER ──
-async function renderReviewCalendar(monday, sunday) {
-  const listEl  = document.getElementById('review-calendar-list');
-  const linkEl  = document.getElementById('review-cal-link');
-
-  // Sæt Google Calendar link til den rigtige uge
-  if (linkEl) {
-    const y = monday.getFullYear();
-    const m = String(monday.getMonth() + 1).padStart(2, '0');
-    const d = String(monday.getDate()).padStart(2, '0');
-    linkEl.href = `https://calendar.google.com/calendar/r/week/${y}/${m}/${d}`;
-  }
-
-  // Vis info om at kalender kræver Google Calendar direkte
-  if (listEl) {
-    listEl.innerHTML = `
-      <div style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);line-height:1.7">
-        Kalendervisning er ikke tilgængelig direkte i dashboardet.<br>
-        Brug linket nedenfor for at se ugens begivenheder i Google Kalender.
-      </div>`;
-  }
-}
-
 // ── TO-DOS ──
 let reviewTodoData = {};
 async function renderReviewTodos() {
