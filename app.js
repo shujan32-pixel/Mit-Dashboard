@@ -1206,6 +1206,7 @@ function initMorgenPage() {
   updateMorgenBalance();
   loadMorgenIntention();
   refreshMorgenCalendar();
+  renderMorgenTodos();
 
   // Tilfældig quote, skifter dagligt
   const qi = new Date().getDate() % QUOTES.length;
@@ -1853,4 +1854,94 @@ async function saveCurrentNote() {
     document.getElementById('note-saved-status').textContent = 'Gemt ' + new Date().toLocaleTimeString('da-DK', { hour:'2-digit', minute:'2-digit' });
     renderNotesList();
   }
+}
+
+// ── MORGEN TO-DOS ──────────────────────────────────────────────────
+async function renderMorgenTodos() {
+  const el = document.getElementById('morgen-todo-list');
+  if (!el) return;
+
+  // Brug allerede indlæste noter hvis muligt, ellers hent fra Supabase
+  let todoNotes = notes.filter(n => n.type === 'todo');
+  if (todoNotes.length === 0 && currentUserId) {
+    const { data } = await sb.from('notes').select('*').eq('user_id', currentUserId).eq('type', 'todo').order('updated_at', { ascending: false });
+    if (data) todoNotes = data;
+  }
+
+  if (todoNotes.length === 0) {
+    el.innerHTML = '<div class="mg-empty">Ingen to-do lister endnu — <span style="color:var(--accent);cursor:pointer" onclick="showPage(\'noter\',document.querySelectorAll(\'.nav-item\')[5])">opret en →</span></div>';
+    return;
+  }
+
+  // Saml ALLE items på tværs af alle to-do lister
+  let allItems = [];
+  todoNotes.forEach(note => {
+    const items = JSON.parse(note.body || '[]');
+    items.forEach(item => allItems.push({ ...item, noteTitle: note.title, noteId: note.id }));
+  });
+
+  const pending = allItems.filter(i => !i.done);
+  const done    = allItems.filter(i => i.done);
+
+  if (allItems.length === 0) {
+    el.innerHTML = '<div class="mg-empty">Ingen punkter i dine to-do lister</div>';
+    return;
+  }
+
+  el.innerHTML = '';
+
+  // Viser maks 8 pending + antal done som summary
+  const toShow = pending.slice(0, 8);
+  toShow.forEach(item => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:0.6rem;padding:0.35rem 0;border-bottom:1px solid var(--border)';
+    row.innerHTML = `
+      <button onclick="toggleMorgenTodo(this,'${item.noteId}','${(item.text||'').replace(/'/g,"\\'")}',false)" style="width:18px;height:18px;border-radius:4px;border:2px solid var(--border2);background:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.65rem;transition:all 0.15s"></button>
+      <span style="font-family:'DM Mono',monospace;font-size:0.8rem;flex:1">${item.text}</span>
+      <span style="font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--muted)">${item.noteTitle}</span>`;
+    el.appendChild(row);
+  });
+
+  if (pending.length > 8) {
+    const more = document.createElement('div');
+    more.style.cssText = "font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted);padding:0.4rem 0;cursor:pointer";
+    more.textContent = `+ ${pending.length - 8} flere punkter`;
+    more.onclick = () => showPage('noter', document.querySelectorAll('.nav-item')[5]);
+    el.appendChild(more);
+  }
+
+  if (done.length > 0) {
+    const summary = document.createElement('div');
+    summary.style.cssText = "font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--accent2);padding:0.4rem 0;margin-top:0.2rem";
+    summary.textContent = `✓ ${done.length} punkt${done.length !== 1 ? 'er' : ''} klaret`;
+    el.appendChild(summary);
+  }
+}
+
+async function toggleMorgenTodo(btn, noteId, text, currentDone) {
+  // Sæt visuelt done med det samme
+  btn.style.background = 'var(--accent2)';
+  btn.style.borderColor = 'var(--accent2)';
+  btn.textContent = '✓';
+  btn.nextElementSibling.style.textDecoration = 'line-through';
+  btn.nextElementSibling.style.color = 'var(--muted)';
+
+  // Opdatér i notes array og Supabase
+  const note = notes.find(n => n.id === noteId);
+  let items = [];
+  if (note) {
+    items = JSON.parse(note.body || '[]');
+  } else {
+    const { data } = await sb.from('notes').select('body').eq('id', noteId).single();
+    if (data) items = JSON.parse(data.body || '[]');
+  }
+
+  const idx = items.findIndex(i => i.text === text && !i.done);
+  if (idx !== -1) items[idx].done = true;
+
+  await sb.from('notes').update({ body: JSON.stringify(items), updated_at: new Date().toISOString() }).eq('id', noteId);
+  if (note) note.body = JSON.stringify(items);
+
+  // Opdatér tæller
+  setTimeout(renderMorgenTodos, 400);
 }

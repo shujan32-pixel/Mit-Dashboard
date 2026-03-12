@@ -75,7 +75,7 @@
         <div class="app-card" onclick="showPage('timer',document.querySelectorAll('.nav-item')[1])"><span class="app-icon">◉</span><div class="app-name">Focus Timer</div><div class="app-desc">Pomodoro-baseret fokustimer med sessionslog</div></div>
         <div class="app-card" onclick="showPage('vaner',document.querySelectorAll('.nav-item')[2])"><span class="app-icon">◈</span><div class="app-name">Vaner</div><div class="app-desc">Daglige vaner, streaks og ugentlig oversigt</div></div>
         <div class="app-card" onclick="showPage('budget',document.querySelectorAll('.nav-item')[3])"><span class="app-icon">◧</span><div class="app-name">Budget</div><div class="app-desc">Indtægter, udgifter og månedsoversigt</div></div>
-        <div class="app-card coming-soon"><span class="soon-tag">Snart</span><span class="app-icon">◱</span><div class="app-name">Noter</div><div class="app-desc">Hurtige noter og tjeklister</div></div>
+        <div class="app-card" onclick="showPage('noter',document.querySelectorAll('.nav-item')[5])"><span class="app-icon">◱</span><div class="app-name">Noter</div><div class="app-desc">Hurtige noter og tjeklister</div></div>
       </div>
     </div>
 
@@ -149,11 +149,20 @@
             </div>
           </div>
 
+          <!-- To-dos -->
+          <div class="mg-card" style="grid-column:1/-1">
+            <div class="mg-card-top">
+              <span class="mg-card-title">To-do i dag</span>
+              <button onclick="showPage('noter',document.querySelectorAll('.nav-item')[5])" style="background:none;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:0.68rem;cursor:pointer;transition:color 0.15s" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">Se alle noter →</button>
+            </div>
+            <div id="morgen-todo-list" style="display:flex;flex-direction:column;gap:0.3rem;margin-top:0.5rem">
+              <div class="mg-empty">Henter to-dos...</div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
-
-    <!-- TIMER -->
     <div class="page" id="page-timer">
       <div class="page-header"><div class="greeting" style="font-size:1.5rem">Focus <span class="name">Timer</span></div><div class="greeting-sub">Pomodoro · dyb fokus · pauser</div></div>
       <div class="timer-wrapper">
