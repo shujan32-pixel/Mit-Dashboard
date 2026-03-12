@@ -2304,7 +2304,7 @@ async function renderReviewCalendar(monday, sunday) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 800,
+        max_tokens: 2000,
         mcp_servers: [{ type: 'url', url: 'https://gcal.mcp.claude.com/mcp', name: 'gcal' }],
         messages: [{ role: 'user', content:
           `Hent kalenderbegivenheder fra primær kalender. TimeMin: ${monStr}T00:00:00, TimeMax: ${sunStr}T23:59:59, timeZone: Europe/Copenhagen. ` +
@@ -2313,11 +2313,38 @@ async function renderReviewCalendar(monday, sunday) {
         }]
       })
     });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      listEl.innerHTML = `<div class="mg-empty">API fejl ${res.status}: ${errText.slice(0,100)}</div>`;
+      return;
+    }
+
     const data  = await res.json();
-    const raw   = data.content?.find(c => c.type === 'text')?.text || '[]';
+
+    // Tjek for API-niveau fejl
+    if (data.error) {
+      listEl.innerHTML = `<div class="mg-empty">Fejl: ${data.error.message || JSON.stringify(data.error)}</div>`;
+      return;
+    }
+
+    const raw   = data.content?.find(c => c.type === 'text')?.text || '';
+    if (!raw) {
+      listEl.innerHTML = '<div class="mg-empty">Ingen data fra kalender</div>';
+      return;
+    }
+
     const clean = raw.replace(/```json|```/g, '').trim();
     let events  = [];
-    try { events = JSON.parse(clean); } catch(e) { events = []; }
+    try {
+      events = JSON.parse(clean);
+    } catch(parseErr) {
+      // Prøv at finde JSON array i svaret
+      const match = clean.match(/\[[\s\S]*\]/);
+      if (match) {
+        try { events = JSON.parse(match[0]); } catch(e) { events = []; }
+      }
+    }
 
     listEl.innerHTML = '';
     if (!Array.isArray(events) || events.length === 0) {
@@ -2334,7 +2361,7 @@ async function renderReviewCalendar(monday, sunday) {
       listEl.appendChild(row);
     });
   } catch(e) {
-    listEl.innerHTML = '<div class="mg-empty">Kunne ikke hente kalender</div>';
+    listEl.innerHTML = `<div class="mg-empty">Fejl: ${e.message}</div>`;
   }
 }
 
