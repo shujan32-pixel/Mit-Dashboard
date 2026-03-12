@@ -1415,7 +1415,7 @@ const NEWS_FEEDS = {
     label: 'Erhverv', emoji: '📈'
   },
   biler:      {
-    feeds: ['https://www.motor.dk/feed/', 'https://www.bilmagasinet.dk/feed/'],
+    feeds: ['https://www.autoblog.com/rss.xml', 'https://www.caranddriver.com/rss/all.xml/'],
     label: 'Biler', emoji: '🚗'
   },
   hacks:      {
