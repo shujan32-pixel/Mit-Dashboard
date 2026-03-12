@@ -1207,6 +1207,7 @@ function initMorgenPage() {
   loadMorgenIntention();
   refreshMorgenCalendar();
   renderMorgenTodos();
+  loadWeather();
 
   // Tilfældig quote, skifter dagligt
   const qi = new Date().getDate() % QUOTES.length;
@@ -1944,4 +1945,109 @@ async function toggleMorgenTodo(btn, noteId, text, currentDone) {
 
   // Opdatér tæller
   setTimeout(renderMorgenTodos, 400);
+}
+
+// ── VEJR (Open-Meteo, Hobro) ───────────────────────────────────────
+const WEATHER_LAT  = 56.6437;
+const WEATHER_LNG  = 9.7948;
+let weatherCache   = null;
+let weatherLastFetch = 0;
+
+const WMO_CODES = {
+  0:  ['☀️','Klart'],
+  1:  ['🌤️','Mest klart'],  2: ['⛅','Delvist skyet'], 3: ['☁️','Overskyet'],
+  45: ['🌫️','Tåget'],       48:['🌫️','Rimtåge'],
+  51: ['🌦️','Let støvregn'],53:['🌦️','Støvregn'],     55:['🌧️','Kraftig støvregn'],
+  61: ['🌧️','Let regn'],    63:['🌧️','Regn'],          65:['🌧️','Kraftig regn'],
+  71: ['🌨️','Let sne'],     73:['🌨️','Sne'],           75:['❄️','Kraftig sne'],
+  80: ['🌦️','Regnbyger'],   81:['🌧️','Kraftige byger'],82:['⛈️','Voldsomme byger'],
+  95: ['⛈️','Tordenvejr'],  96:['⛈️','Torden + hagl'],99:['⛈️','Kraftig torden+hagl'],
+};
+
+function getWMO(code) {
+  return WMO_CODES[code] || ['🌡️','Ukendt'];
+}
+
+async function loadWeather(forceRefresh = false) {
+  const now = Date.now();
+  if (!forceRefresh && weatherCache && (now - weatherLastFetch < 30 * 60 * 1000)) {
+    renderWeather(weatherCache);
+    return;
+  }
+
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LAT}&longitude=${WEATHER_LNG}` +
+      `&current=temperature_2m,apparent_temperature,weathercode,windspeed_10m,precipitation,cloudcover` +
+      `&hourly=temperature_2m,weathercode,precipitation_probability` +
+      `&wind_speed_unit=ms&timezone=Europe%2FCopenhagen&forecast_days=1`;
+
+    const res  = await fetch(url);
+    const data = await res.json();
+    weatherCache    = data;
+    weatherLastFetch = now;
+    renderWeather(data);
+  } catch(e) {
+    const desc = document.getElementById('weather-desc');
+    if (desc) desc.textContent = 'Kunne ikke hente vejr';
+  }
+}
+
+function renderWeather(data) {
+  const c = data.current;
+  if (!c) return;
+
+  const [icon, desc] = getWMO(c.weathercode);
+  const temp    = Math.round(c.temperature_2m);
+  const feels   = Math.round(c.apparent_temperature);
+  const wind    = Math.round(c.windspeed_10m * 3.6); // m/s → km/t
+  const precip  = c.precipitation.toFixed(1);
+  const cloud   = c.cloudcover;
+
+  // Hero badge
+  const heroIcon = document.getElementById('weather-hero-icon');
+  const heroTemp = document.getElementById('weather-hero-temp');
+  if (heroIcon) heroIcon.textContent = icon;
+  if (heroTemp) heroTemp.textContent = temp + '°';
+
+  // Stor visning
+  const iconBig = document.getElementById('weather-icon-big');
+  const tempBig = document.getElementById('weather-temp-big');
+  const descEl  = document.getElementById('weather-desc');
+  if (iconBig) iconBig.textContent = icon;
+  if (tempBig) tempBig.textContent = temp + '°C';
+  if (descEl)  descEl.textContent  = desc;
+
+  // Detaljer
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('weather-wind',   wind + ' km/t');
+  set('weather-precip', precip + ' mm');
+  set('weather-feels',  feels + '°C');
+  set('weather-cloud',  cloud + '%');
+
+  // Timeoversigt — næste 12 timer
+  const forecastEl = document.getElementById('weather-forecast');
+  if (!forecastEl || !data.hourly) return;
+
+  forecastEl.innerHTML = '';
+  const hours = data.hourly.time;
+  const temps = data.hourly.temperature_2m;
+  const codes = data.hourly.weathercode;
+  const rains = data.hourly.precipitation_probability;
+  const nowH  = new Date().getHours();
+
+  let shown = 0;
+  for (let i = 0; i < hours.length && shown < 12; i++) {
+    const h = new Date(hours[i]).getHours();
+    if (h < nowH) continue;
+    const [ic] = getWMO(codes[i]);
+    const col  = document.createElement('div');
+    col.className = 'weather-hour';
+    col.innerHTML = `
+      <span class="weather-hour-time">${String(h).padStart(2,'0')}:00</span>
+      <span class="weather-hour-icon">${ic}</span>
+      <span class="weather-hour-temp">${Math.round(temps[i])}°</span>
+      <span class="weather-hour-rain">${rains[i]}%</span>`;
+    forecastEl.appendChild(col);
+    shown++;
+  }
 }

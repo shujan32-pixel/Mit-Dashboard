@@ -88,6 +88,10 @@
           <div class="mg-time-row">
             <div class="mg-clock" id="morgen-clock">—</div>
             <div class="mg-ampm" id="morgen-ampm"></div>
+            <div id="weather-hero" class="weather-hero-badge" title="Vejr i Hobro">
+              <span id="weather-hero-icon">⋯</span>
+              <span id="weather-hero-temp">—</span>
+            </div>
           </div>
           <div class="mg-greeting" id="morgen-greeting">—</div>
           <div class="mg-name">Shujan</div>
@@ -123,6 +127,29 @@
             <div id="morgen-calendar-list" class="mg-cal-list">
               <div class="mg-empty">Henter...</div>
             </div>
+          </div>
+
+          <!-- Vejr -->
+          <div class="mg-card" id="weather-card">
+            <div class="mg-card-top">
+              <span class="mg-card-title">Vejr i Hobro</span>
+              <button onclick="loadWeather(true)" class="mg-refresh" title="Opdater">↻</button>
+            </div>
+            <div id="weather-main" style="display:flex;align-items:center;gap:1.2rem;margin:0.75rem 0">
+              <div id="weather-icon-big" style="font-size:3rem;line-height:1">⋯</div>
+              <div>
+                <div id="weather-temp-big" style="font-size:2rem;font-weight:800;font-family:'Syne',sans-serif">—</div>
+                <div id="weather-desc" style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted)">Henter vejr...</div>
+              </div>
+            </div>
+            <div id="weather-details" style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.5rem">
+              <div class="weather-detail-item"><span class="weather-detail-lbl">💨 Vind</span><span class="weather-detail-val" id="weather-wind">—</span></div>
+              <div class="weather-detail-item"><span class="weather-detail-lbl">💧 Nedbør</span><span class="weather-detail-val" id="weather-precip">—</span></div>
+              <div class="weather-detail-item"><span class="weather-detail-lbl">🌡 Føles som</span><span class="weather-detail-val" id="weather-feels">—</span></div>
+              <div class="weather-detail-item"><span class="weather-detail-lbl">☁️ Skydække</span><span class="weather-detail-val" id="weather-cloud">—</span></div>
+            </div>
+            <div id="weather-forecast" style="display:flex;gap:0.5rem;margin-top:1rem;overflow-x:auto;padding-bottom:0.25rem"></div>
+            <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--muted);margin-top:0.75rem;text-align:right">Open-Meteo · opdateres hvert 30 min</div>
           </div>
 
           <!-- Fokus + saldo -->
