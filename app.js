@@ -2294,31 +2294,43 @@ async function renderReviewCalendar(monday, sunday) {
   const listEl = document.getElementById('review-calendar-list');
   if (!listEl) return;
   listEl.innerHTML = '<div class="mg-empty">Henter...</div>';
+
+  const monStr = monday.toISOString().split('T')[0];
+  const sunStr = sunday.toISOString().split('T')[0];
+
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 600,
+        max_tokens: 800,
         mcp_servers: [{ type: 'url', url: 'https://gcal.mcp.claude.com/mcp', name: 'gcal' }],
         messages: [{ role: 'user', content:
-          `Hent kalenderbegivenheder fra ${monday.toISOString()} til ${sunday.toISOString()} (tidszone Europe/Copenhagen). ` +
-          `Returner KUN en JSON-array uden kodeblok: [{"title":"...","date":"DD/MM","time":"HH:MM"},...]. ` +
-          `Maks 10 begivenheder. Ekskluder vane-påmindelser. Hvis ingen begivenheder, returner [].`
+          `Hent kalenderbegivenheder fra primær kalender. TimeMin: ${monStr}T00:00:00, TimeMax: ${sunStr}T23:59:59, timeZone: Europe/Copenhagen. ` +
+          `Svar KUN med JSON-array (ingen markdown, ingen forklaring), format: [{"summary":"navn","date":"DD/MM","start":"HH:MM","allDay":false}]. ` +
+          `Maks 15 begivenheder. Ekskluder begivenheder med "Vane-påmindelse" i titlen. Hvis ingen begivenheder, svar med [].`
         }]
       })
     });
-    const data   = await res.json();
-    const text   = (data.content?.find(c => c.type === 'text')?.text || '[]').trim();
-    const clean  = text.replace(/```json|```/g, '').trim();
-    const events = JSON.parse(clean);
+    const data  = await res.json();
+    const raw   = data.content?.find(c => c.type === 'text')?.text || '[]';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    let events  = [];
+    try { events = JSON.parse(clean); } catch(e) { events = []; }
+
     listEl.innerHTML = '';
-    if (events.length === 0) { listEl.innerHTML = '<div class="mg-empty">Ingen begivenheder denne uge</div>'; return; }
+    if (!Array.isArray(events) || events.length === 0) {
+      listEl.innerHTML = '<div class="mg-empty">Ingen begivenheder denne uge 🎉</div>';
+      return;
+    }
     events.forEach(ev => {
       const row = document.createElement('div');
       row.className = 'review-cal-item';
-      row.innerHTML = `<span class="review-cal-time">${ev.date} ${ev.time || ''}</span><span>${ev.title}</span>`;
+      const timeStr = ev.allDay ? 'Heldagsbegivenhed' : (ev.start || '');
+      row.innerHTML = `
+        <span class="review-cal-time">${ev.date || ''} ${timeStr}</span>
+        <span>${ev.summary || 'Unavngivet'}</span>`;
       listEl.appendChild(row);
     });
   } catch(e) {
