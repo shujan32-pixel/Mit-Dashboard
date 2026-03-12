@@ -186,6 +186,32 @@
   .cat-fill { height:100%; border-radius:2px; background:var(--danger); transition:width 0.4s ease; }
   .no-data { font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--muted); text-align:center; padding:2rem 0; }
 
+  /* GOALS */
+  .goal-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.5rem; margin-bottom:1rem; transition:border-color 0.2s; }
+  .goal-card:hover { border-color:var(--border2); }
+  .goal-header { display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem; }
+  .goal-emoji { font-size:1.8rem; }
+  .goal-title { font-size:1rem; font-weight:800; }
+  .goal-priority { font-family:'DM Mono',monospace; font-size:0.65rem; color:var(--muted); margin-top:1px; }
+  .goal-progress-track { height:8px; background:var(--surface2); border-radius:4px; overflow:hidden; margin-bottom:0.75rem; }
+  .goal-progress-fill { height:100%; border-radius:4px; background:var(--accent); transition:width 0.6s ease; }
+  .goal-stats { display:flex; justify-content:space-between; align-items:center; }
+  .goal-pct { font-size:1.5rem; font-weight:800; color:var(--accent); }
+  .goal-eta { font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted); text-align:right; }
+  .goal-amounts { font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted); margin-top:0.25rem; }
+  .goal-del { background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.8rem; margin-left:auto; padding:0.25rem; transition:color 0.2s; }
+  .goal-del:hover { color:var(--danger); }
+  .split-row { display:flex; justify-content:space-between; align-items:center; padding:0.75rem 0; border-bottom:1px solid var(--border); }
+  .split-row:last-child { border-bottom:none; }
+  .split-label { font-size:0.85rem; font-weight:600; }
+  .split-sub { font-family:'DM Mono',monospace; font-size:0.68rem; color:var(--muted); margin-top:2px; }
+  .split-amount { font-family:'DM Mono',monospace; font-size:0.95rem; font-weight:700; color:var(--accent2); }
+  .split-amount.warn { color:var(--danger); }
+  .coach-section { margin-bottom:1rem; }
+  .coach-section strong { color:var(--accent); }
+
+  #csv-dropzone:hover { border-color:var(--accent); background:rgba(124,109,250,0.05); }
+
   @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
   @media (max-width:900px) { .two-col, .budget-grid { grid-template-columns:1fr; } }
   @media (max-width:768px) {
@@ -338,9 +364,13 @@
       </div>
       <div class="tab-row">
         <button class="tab-btn active" onclick="setBudgetTab('oversigt',this)">Oversigt</button>
+        <button class="tab-btn" onclick="setBudgetTab('maal',this)">🎯 Mål</button>
+        <button class="tab-btn" onclick="setBudgetTab('fordeling',this)">💡 Fordeling</button>
+        <button class="tab-btn" onclick="setBudgetTab('coach',this)">🤖 Økonomicoach</button>
         <button class="tab-btn" onclick="setBudgetTab('transaktioner',this)">Transaktioner</button>
         <button class="tab-btn" onclick="setBudgetTab('faste',this)">Faste udgifter</button>
         <button class="tab-btn" onclick="setBudgetTab('tilfoej',this)">+ Tilføj</button>
+        <button class="tab-btn" onclick="setBudgetTab('import',this)">⬆ CSV</button>
       </div>
 
       <div id="btab-oversigt">
@@ -349,6 +379,137 @@
           <div class="panel"><h3>Udgifter per kategori</h3><div id="category-bars"><div class="no-data">Ingen udgifter endnu</div></div></div>
         </div>
       </div>
+      <!-- MÅL -->
+      <div id="btab-maal" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 340px;gap:2rem;align-items:start">
+          <div>
+            <div class="section-title">Dine sparemål</div>
+            <div id="goals-list"><div class="no-data">Ingen mål endnu — tilføj dit første mål!</div></div>
+          </div>
+          <div class="panel">
+            <h3>Tilføj nyt mål</h3>
+            <div class="field"><label>Navn på mål</label><input type="text" id="goal-name" placeholder="fx Hus, Bil, Ferie..."></div>
+            <div class="field"><label>Emoji / ikon</label>
+              <select id="goal-emoji">
+                <option value="🏠">🏠 Hus</option><option value="🚗">🚗 Bil</option>
+                <option value="✈️">✈️ Ferie/rejse</option><option value="💰">💰 Opsparing</option>
+                <option value="💳">💳 Betale gæld</option><option value="🛡️">🛡️ Nødfond</option>
+                <option value="🎓">🎓 Uddannelse</option><option value="⭐">⭐ Andet</option>
+              </select>
+            </div>
+            <div class="field"><label>Målbeløb (kr)</label><input type="number" id="goal-target" placeholder="fx 300000"></div>
+            <div class="field"><label>Nuværende opsparet (kr)</label><input type="number" id="goal-saved" placeholder="0" value="0"></div>
+            <div class="field"><label>Månedlig opsparing (kr)</label><input type="number" id="goal-monthly" placeholder="fx 2000"></div>
+            <div class="field"><label>Prioritet</label>
+              <select id="goal-priority">
+                <option value="1">⭐ Primær</option>
+                <option value="2">★ Sekundær</option>
+                <option value="3">☆ Lavere prioritet</option>
+              </select>
+            </div>
+            <button class="action-btn" onclick="addGoal()" style="width:100%;margin-top:0.5rem">Tilføj mål +</button>
+            <div class="login-error" id="goal-error"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FORDELING -->
+      <div id="btab-fordeling" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2rem">
+          <div>
+            <div class="panel" style="margin-bottom:1.5rem">
+              <h3>Din månedlige indkomst</h3>
+              <div class="field"><label>Fast løn (netto kr/md)</label><input type="number" id="split-salary" placeholder="fx 25000" oninput="renderSplit()"></div>
+              <div class="field"><label>Forventet freelance/variabel (kr/md)</label><input type="number" id="split-freelance" placeholder="fx 5000" oninput="renderSplit()"></div>
+            </div>
+            <div class="panel">
+              <h3>Fordeling af overskud</h3>
+              <p style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6">Baseret på 50/30/20-reglen: 50% til nødvendige udgifter, 30% til livsstil, 20% til opsparing og mål.</p>
+              <div id="split-result"><div class="no-data">Indtast din indkomst ovenfor</div></div>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Anbefalede månedlige opsparinger</h3>
+            <p style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6">Baseret på dine mål og deres prioritet fordeles dit opsparingsbudget automatisk.</p>
+            <div id="split-goals"><div class="no-data">Tilføj mål under 🎯 Mål-fanen</div></div>
+          </div>
+        </div>
+
+        <!-- ENGANGSBELØB -->
+        <div style="border-top:1px solid var(--border);padding-top:2rem">
+          <div class="section-title">Fordel et engangsbeløb</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem">
+            <div class="panel">
+              <h3>Hvad har du modtaget?</h3>
+              <p style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6">Tast beløbet ind og vælg type — så beregner coachen den optimale fordeling på dine mål og en eventuel buffer.</p>
+              <div class="field">
+                <label>Beløb (kr)</label>
+                <input type="number" id="lump-amount" placeholder="fx 10000" oninput="renderLumpSplit()">
+              </div>
+              <div class="field">
+                <label>Type</label>
+                <select id="lump-type" onchange="renderLumpSplit()">
+                  <option value="bonus">💼 Bonus</option>
+                  <option value="ferie">🌴 Feriepenge</option>
+                  <option value="freelance">💻 Freelance betaling</option>
+                  <option value="gave">🎁 Gave / arv</option>
+                  <option value="salg">🏷️ Salg af ting</option>
+                  <option value="andet">💰 Andet</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Strategi</label>
+                <select id="lump-strategy" onchange="renderLumpSplit()">
+                  <option value="prioritet">⭐ Følg prioritet (anbefalet)</option>
+                  <option value="lige">⚖️ Fordel ligeligt på alle mål</option>
+                  <option value="hast">🚀 Alt til det nærmeste mål</option>
+                  <option value="noedfond">🛡️ Nødfond først, resten på mål</option>
+                </select>
+              </div>
+            </div>
+            <div class="panel" id="lump-result-panel">
+              <h3>Anbefalet fordeling</h3>
+              <div id="lump-result"><div class="no-data">Indtast et beløb til venstre</div></div>
+              <div id="lump-ask-coach" style="display:none;margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+                <button class="action-btn" style="width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text)" onclick="lumpAskCoach()">
+                  🤖 Spørg coachen om dette beløb →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ØKONOMICOACH -->
+      <div id="btab-coach" style="display:none">
+        <div style="max-width:760px">
+          <div class="panel" style="margin-bottom:1.5rem">
+            <h3>🤖 Din personlige økonomicoach</h3>
+            <p style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6">Coachen analyserer dine faktiske udgifter og mål, og giver dig konkrete råd til hvordan du optimerer din økonomi.</p>
+            <div style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap">
+              <button class="action-btn" onclick="runCoach('analyse')">Analysér min økonomi</button>
+              <button class="action-btn" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text)" onclick="runCoach('spare')">Hvor kan jeg spare?</button>
+              <button class="action-btn" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text)" onclick="runCoach('maal')">Hvornår når jeg mine mål?</button>
+              <button class="action-btn" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text)" onclick="runCoach('fordel')">Fordel min løn optimalt</button>
+            </div>
+            <div style="position:relative">
+              <textarea id="coach-custom" placeholder="Stil dit eget spørgsmål, fx: 'Kan jeg råd til en bil til 150.000 kr om 2 år?'" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace;font-size:0.82rem;padding:0.75rem 1rem;outline:none;resize:vertical;min-height:70px;"></textarea>
+              <button class="action-btn" onclick="runCoach('custom')" style="margin-top:0.5rem">Send spørgsmål →</button>
+            </div>
+          </div>
+          <div class="panel" id="coach-response-panel" style="display:none">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem">
+              <div style="width:32px;height:32px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">🤖</div>
+              <div style="font-weight:700;font-size:0.9rem">Økonomicoach</div>
+            </div>
+            <div id="coach-loading" style="display:none;font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--muted)">
+              <div class="spinner" style="width:20px;height:20px;display:inline-block;vertical-align:middle;margin-right:0.5rem"></div>Analyserer din økonomi...
+            </div>
+            <div id="coach-response" style="font-size:0.88rem;line-height:1.7;white-space:pre-wrap"></div>
+          </div>
+        </div>
+      </div>
+
       <div id="btab-transaktioner" style="display:none">
         <div class="panel"><h3>Alle transaktioner <span style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted);font-weight:400" id="tx-month-label"></span></h3><div id="tx-list"><div class="no-data">Ingen transaktioner endnu</div></div></div>
       </div>
@@ -398,8 +559,30 @@
           </div>
         </div>
       </div>
+      <div id="btab-import" style="display:none">
+        <div class="panel" style="max-width:680px">
+          <h3>Importer fra Sparkassen CSV</h3>
+          <p style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6;">Eksportér dit kontoudtog fra Sparkassen netbank og upload CSV-filen herunder. Transaktionerne kategoriseres automatisk og tilføjes dit budget.</p>
+          <div id="csv-dropzone" onclick="document.getElementById('csv-file-input').click()" style="border:2px dashed var(--border2);border-radius:10px;padding:2.5rem;text-align:center;cursor:pointer;transition:border-color 0.2s;margin-bottom:1.5rem;">
+            <div style="font-size:2rem;margin-bottom:0.75rem">⬆</div>
+            <div style="font-weight:700;margin-bottom:0.25rem">Klik for at vælge CSV-fil</div>
+            <div style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)">Sparkassen kontoudtog · .csv format</div>
+          </div>
+          <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="handleCSVFile(this)">
+          <div id="csv-preview" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+              <div>
+                <span style="font-weight:700" id="csv-count">0 transaktioner</span>
+                <span style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);margin-left:0.75rem" id="csv-skip-info"></span>
+              </div>
+              <button class="action-btn" onclick="importCSV()" id="csv-import-btn">Importer alle →</button>
+            </div>
+            <div style="max-height:360px;overflow-y:auto" id="csv-preview-list"></div>
+            <div class="login-error" id="csv-error"></div>
+          </div>
+        </div>
+      </div>
     </div>
-
   </main>
 </div>
 
@@ -680,6 +863,7 @@ async function loadBudget() {
   const { data: fixData } = await sb.from('fixed_expenses').select('*').eq('user_id',currentUserId).order('created_at');
   if (fixData) fixedExpenses=fixData;
   renderBudget(); updateHomeStats();
+  loadGoals();
 }
 
 function renderBudget() {
@@ -793,10 +977,487 @@ async function deleteFixed(id) {
   renderBudget();
 }
 
+// ── CSV IMPORT ────────────────────────────────────────────────────
+const CAT_RULES = [
+  { pattern: /netto|føtex|bilka|rema|aldi|lidl|irma|superbrugsen|meny|fakta|spar|kiwi|dagligvarer|mad|bager|bakery|restaurant|cafe|mcdonalds|burger|pizza|sushi|takeaway|delivery|wolt|just.eat/i, cat: 'Mad & drikke' },
+  { pattern: /easypark|parking|parkering|dsb|rejsekort|taxa|uber|7-eleven|q8|shell|circle.k|tankstation|bil|benzin|biludlejning|avis|hertz/i, cat: 'Transport' },
+  { pattern: /netflix|spotify|hbo|disney|viaplay|youtube|tv2|apple|google|adobe|dropbox|github|real.debrid|abonnement|subscription/i, cat: 'Abonnement' },
+  { pattern: /læge|apotek|tandlæge|hospital|medicin|fitness|sport|træning|swim|løb/i, cat: 'Sundhed' },
+  { pattern: /tøj|sko|zara|h&m|hm|jack|selected|pieces|vila|vero.moda|mango|weekday/i, cat: 'Tøj & sko' },
+  { pattern: /bolig|husleje|el|varme|vand|internet|tdc|yousee|telenor|telia|norlys|forsikring|tryg|codan/i, cat: 'Bolig' },
+  { pattern: /løn|salary|overførsel|betaling|ferie|feriepenge|skat|refusion/i, cat: 'Løn & overførsler' },
+  { pattern: /bio|kino|bowlin|spillested|koncert|teater|museum|underholdning/i, cat: 'Underholdning' },
+];
+
+function guessCategory(description) {
+  for (const rule of CAT_RULES) {
+    if (rule.pattern.test(description)) return rule.cat;
+  }
+  return 'Andet';
+}
+
+function parseSparkassenCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const result = [];
+  for (const line of lines) {
+    const parts = line.split(';');
+    if (parts.length < 3) continue;
+    const rawDate = parts[0].trim();   // dd-mm-yyyy
+    const rawDesc = parts[1].trim();
+    const rawAmt  = parts[2].trim().replace('.','').replace(',','.');
+    const amount  = parseFloat(rawAmt);
+    if (isNaN(amount)) continue;
+
+    // Convert date from dd-mm-yyyy to yyyy-mm-dd
+    const [d, m, y] = rawDate.split('-');
+    if (!d || !m || !y) continue;
+    const isoDate = `${y}-${m}-${d}`;
+
+    const type = amount >= 0 ? 'income' : 'expense';
+    const absAmount = Math.abs(amount);
+    const category = type === 'income' ? guessIncomeCategory(rawDesc) : guessCategory(rawDesc);
+
+    result.push({ date: isoDate, name: rawDesc, amount: absAmount, type, category, rawLine: line });
+  }
+  return result;
+}
+
+function guessIncomeCategory(desc) {
+  if (/løn|salary/i.test(desc)) return 'Løn & overførsler';
+  if (/ferie|feriepenge/i.test(desc)) return 'Løn & overførsler';
+  if (/skat|refusion/i.test(desc)) return 'Løn & overførsler';
+  return 'Løn & overførsler';
+}
+
+let csvParsed = [];
+
+function handleCSVFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    // Try UTF-8 first, fallback handled by FileReader
+    const text = e.target.result;
+    csvParsed = parseSparkassenCSV(text);
+
+    // Check for duplicates against existing transactions
+    const existingKeys = new Set(transactions.map(t => `${t.tx_date}_${t.name}_${t.amount}`));
+    const newOnly = csvParsed.filter(r => !existingKeys.has(`${r.date}_${r.name}_${r.amount}`));
+    const skipped = csvParsed.length - newOnly.length;
+    csvParsed = newOnly;
+
+    document.getElementById('csv-count').textContent = `${csvParsed.length} nye transaktioner fundet`;
+    document.getElementById('csv-skip-info').textContent = skipped > 0 ? `(${skipped} allerede importeret)` : '';
+    renderCSVPreview();
+    document.getElementById('csv-preview').style.display = 'block';
+  };
+  reader.readAsText(file, 'windows-1252');
+}
+
+function renderCSVPreview() {
+  const list = document.getElementById('csv-preview-list');
+  list.innerHTML = '';
+  if (csvParsed.length === 0) {
+    list.innerHTML = '<div class="no-data">Ingen nye transaktioner at importere</div>';
+    document.getElementById('csv-import-btn').disabled = true;
+    return;
+  }
+  csvParsed.forEach((tx, i) => {
+    const el = document.createElement('div');
+    el.className = 'tx-item';
+    el.style.alignItems = 'center';
+    el.innerHTML = `
+      <div class="tx-dot ${tx.type}"></div>
+      <div class="tx-info">
+        <div class="tx-name" style="font-size:0.78rem">${tx.name}</div>
+        <div class="tx-cat">${tx.date}</div>
+      </div>
+      <select onchange="csvParsed[${i}].category=this.value" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'DM Mono',monospace;font-size:0.65rem;padding:0.2rem 0.4rem;margin-right:0.5rem">
+        ${['Mad & drikke','Transport','Bolig','Abonnement','Underholdning','Tøj & sko','Sundhed','Løn & overførsler','Andet'].map(c =>
+          `<option ${c===tx.category?'selected':''}>${c}</option>`
+        ).join('')}
+      </select>
+      <span class="tx-amount ${tx.type}" style="min-width:80px;text-align:right">${tx.type==='income'?'+':'−'}${tx.amount.toLocaleString('da-DK')} kr</span>
+    `;
+    list.appendChild(el);
+  });
+}
+
+async function importCSV() {
+  const btn = document.getElementById('csv-import-btn');
+  const err = document.getElementById('csv-error');
+  if (csvParsed.length === 0) return;
+  btn.disabled = true; btn.textContent = 'Importerer...';
+  err.textContent = '';
+
+  const rows = csvParsed.map(tx => ({
+    user_id: currentUserId,
+    type: tx.type,
+    amount: tx.amount,
+    name: tx.name,
+    category: tx.category,
+    tx_date: tx.date
+  }));
+
+  const { data, error } = await sb.from('transactions').insert(rows).select();
+  if (error) {
+    err.textContent = 'Fejl ved import: ' + error.message;
+    btn.disabled = false; btn.textContent = 'Importer alle →';
+    return;
+  }
+
+  transactions = [...data, ...transactions];
+  csvParsed = [];
+  renderBudget(); renderBudgetChart();
+  btn.textContent = '✓ Importeret!';
+  setTimeout(() => {
+    document.getElementById('csv-preview').style.display = 'none';
+    document.getElementById('csv-file-input').value = '';
+    btn.disabled = false; btn.textContent = 'Importer alle →';
+  }, 2000);
+}
+
+// ── GOALS ─────────────────────────────────────────────────────────
+let goals = [];
+
+async function loadGoals() {
+  const { data } = await sb.from('goals').select('*').eq('user_id', currentUserId).order('priority');
+  if (data) { goals = data; renderGoals(); renderSplit(); }
+}
+
+async function addGoal() {
+  const name     = document.getElementById('goal-name').value.trim();
+  const emoji    = document.getElementById('goal-emoji').value;
+  const target   = parseFloat(document.getElementById('goal-target').value);
+  const saved    = parseFloat(document.getElementById('goal-saved').value) || 0;
+  const monthly  = parseFloat(document.getElementById('goal-monthly').value) || 0;
+  const priority = parseInt(document.getElementById('goal-priority').value);
+  const err      = document.getElementById('goal-error');
+  if (!name || !target) { err.textContent = 'Udfyld navn og målbeløb.'; return; }
+  err.textContent = '';
+  const { data } = await sb.from('goals').insert({ user_id:currentUserId, name, emoji, target_amount:target, saved_amount:saved, monthly_saving:monthly, priority }).select().single();
+  if (data) {
+    goals.push(data);
+    goals.sort((a,b) => a.priority - b.priority);
+    document.getElementById('goal-name').value = '';
+    document.getElementById('goal-target').value = '';
+    document.getElementById('goal-saved').value = '0';
+    document.getElementById('goal-monthly').value = '';
+    renderGoals(); renderSplit();
+  }
+}
+
+async function deleteGoal(id) {
+  await sb.from('goals').delete().eq('id', id);
+  goals = goals.filter(g => g.id !== id);
+  renderGoals(); renderSplit();
+}
+
+function renderGoals() {
+  const list = document.getElementById('goals-list');
+  if (goals.length === 0) { list.innerHTML = '<div class="no-data">Ingen mål endnu — tilføj dit første mål!</div>'; return; }
+  const PRIORITY = ['','⭐ Primær','★ Sekundær','☆ Lavere prioritet'];
+  list.innerHTML = '';
+  goals.forEach(g => {
+    const pct = Math.min(100, Math.round((g.saved_amount / g.target_amount) * 100));
+    const remaining = g.target_amount - g.saved_amount;
+    const months = g.monthly_saving > 0 ? Math.ceil(remaining / g.monthly_saving) : null;
+    const eta = months ? etaText(months) : 'Ingen månedlig opsparing sat';
+    const card = document.createElement('div');
+    card.className = 'goal-card';
+    card.innerHTML = `
+      <div class="goal-header">
+        <span class="goal-emoji">${g.emoji}</span>
+        <div style="flex:1">
+          <div class="goal-title">${g.name}</div>
+          <div class="goal-priority">${PRIORITY[g.priority] || ''}</div>
+        </div>
+        <button class="goal-del" onclick="deleteGoal('${g.id}')">✕</button>
+      </div>
+      <div class="goal-progress-track"><div class="goal-progress-fill" style="width:${pct}%;background:${pct>=100?'var(--accent2)':'var(--accent)'}"></div></div>
+      <div class="goal-stats">
+        <div>
+          <div class="goal-pct" style="color:${pct>=100?'var(--accent2)':'var(--accent)'}">${pct}%</div>
+          <div class="goal-amounts">${g.saved_amount.toLocaleString('da-DK')} / ${g.target_amount.toLocaleString('da-DK')} kr</div>
+        </div>
+        <div class="goal-eta">
+          <div style="color:var(--text);font-weight:700">${months ? eta : '—'}</div>
+          <div>${months ? 'til målet er nået' : eta}</div>
+          ${g.monthly_saving > 0 ? `<div style="margin-top:2px">${g.monthly_saving.toLocaleString('da-DK')} kr/md sat af</div>` : ''}
+        </div>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function etaText(months) {
+  if (months <= 0) return 'Mål nået! 🎉';
+  if (months < 12) return `${months} måned${months>1?'er':''}`;
+  const y = Math.floor(months/12), m = months%12;
+  return `${y} år${m>0?' '+m+' md':''}`;
+}
+
+// ── SPLIT / FORDELING ─────────────────────────────────────────────
+function renderSplit() {
+  const salary    = parseFloat(document.getElementById('split-salary')?.value) || 0;
+  const freelance = parseFloat(document.getElementById('split-freelance')?.value) || 0;
+  const total     = salary + freelance;
+  const res       = document.getElementById('split-result');
+  const goalsDiv  = document.getElementById('split-goals');
+  if (!res) return;
+  if (total === 0) { res.innerHTML = '<div class="no-data">Indtast din indkomst ovenfor</div>'; return; }
+
+  const fixed     = fixedExpenses.reduce((s,f) => s+f.amount, 0);
+  const needs     = Math.round(total * 0.50);
+  const lifestyle = Math.round(total * 0.30);
+  const savings   = Math.round(total * 0.20);
+  const freeAfterFixed = Math.max(0, total - fixed);
+  const actualSavings  = Math.max(0, freeAfterFixed - lifestyle);
+
+  res.innerHTML = `
+    <div class="split-row"><div><div class="split-label">💳 Nødvendige udgifter</div><div class="split-sub">Husleje, mad, transport, regninger</div></div><div class="split-amount">${needs.toLocaleString('da-DK')} kr</div></div>
+    <div class="split-row"><div><div class="split-label">🎉 Livsstil & fornøjelser</div><div class="split-sub">Shopping, underholdning, spisning ude</div></div><div class="split-amount">${lifestyle.toLocaleString('da-DK')} kr</div></div>
+    <div class="split-row"><div><div class="split-label">💰 Opsparing & mål</div><div class="split-sub">Fordeles på dine mål nedenfor</div></div><div class="split-amount">${savings.toLocaleString('da-DK')} kr</div></div>
+    <div class="split-row" style="margin-top:0.5rem;padding-top:1rem;border-top:2px solid var(--border2)"><div><div class="split-label">📊 Faste udgifter i alt</div><div class="split-sub">Baseret på dine registrerede faste udgifter</div></div><div class="split-amount ${fixed>needs?'warn':''}">${fixed.toLocaleString('da-DK')} kr</div></div>
+    <div class="split-row"><div><div class="split-label">✅ Til rådighed efter faste</div><div class="split-sub">Hvad du faktisk har at gøre godt med</div></div><div class="split-amount">${freeAfterFixed.toLocaleString('da-DK')} kr</div></div>
+  `;
+
+  if (!goalsDiv) return;
+  if (goals.length === 0) { goalsDiv.innerHTML = '<div class="no-data">Tilføj mål under 🎯 Mål-fanen</div>'; return; }
+  const totalPriority = goals.reduce((s,g) => s + (4 - g.priority), 0);
+  goalsDiv.innerHTML = '';
+  goals.forEach(g => {
+    const weight  = (4 - g.priority) / totalPriority;
+    const alloc   = Math.round(savings * weight);
+    const rem     = Math.max(0, g.target_amount - g.saved_amount);
+    const months  = alloc > 0 ? Math.ceil(rem / alloc) : null;
+    const row     = document.createElement('div');
+    row.className = 'split-row';
+    row.innerHTML = `
+      <div style="display:flex;align-items:center;gap:0.5rem;flex:1">
+        <span style="font-size:1.2rem">${g.emoji}</span>
+        <div><div class="split-label">${g.name}</div><div class="split-sub">${months ? etaText(months)+' til målet' : 'Sæt månedlig opsparing'}</div></div>
+      </div>
+      <div class="split-amount">${alloc.toLocaleString('da-DK')} kr/md</div>`;
+    goalsDiv.appendChild(row);
+  });
+}
+
+// ── ØKONOMICOACH ──────────────────────────────────────────────────
+async function runCoach(type) {
+  const panel    = document.getElementById('coach-response-panel');
+  const loading  = document.getElementById('coach-loading');
+  const response = document.getElementById('coach-response');
+  panel.style.display  = 'block';
+  loading.style.display = 'block';
+  response.textContent  = '';
+
+  const salary    = document.getElementById('split-salary')?.value || '?';
+  const freelance = document.getElementById('split-freelance')?.value || '0';
+  const totalIncome = (parseFloat(salary)||0) + (parseFloat(freelance)||0);
+  const totalExp  = transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const totalInc  = transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const fixedTotal= fixedExpenses.reduce((s,f)=>s+f.amount,0);
+
+  const catMap = {};
+  transactions.filter(t=>t.type==='expense').forEach(t => { catMap[t.category] = (catMap[t.category]||0)+t.amount; });
+
+  const goalsSummary = goals.map(g =>
+    `${g.emoji} ${g.name}: mål ${g.target_amount.toLocaleString('da-DK')} kr, opsparet ${g.saved_amount.toLocaleString('da-DK')} kr, månedlig opsparing ${g.monthly_saving.toLocaleString('da-DK')} kr`
+  ).join('\n');
+
+  const catSummary = Object.entries(catMap).map(([c,a]) => `${c}: ${a.toLocaleString('da-DK')} kr`).join(', ');
+
+  const context = `
+Brugerens økonomi:
+- Månedlig indkomst (løn): ${salary} kr
+- Variabel indkomst (freelance): ${freelance} kr
+- Total registreret indkomst: ${totalInc.toLocaleString('da-DK')} kr
+- Total registrerede udgifter: ${totalExp.toLocaleString('da-DK')} kr
+- Faste månedlige udgifter: ${fixedTotal.toLocaleString('da-DK')} kr
+- Udgifter per kategori: ${catSummary || 'ingen data endnu'}
+- Sparemål:
+${goalsSummary || 'ingen mål sat endnu'}
+  `.trim();
+
+  const prompts = {
+    analyse: `Du er en venlig dansk økonomicoach. Analysér denne persons økonomi og giv en klar, konkret oversigt med styrker og forbedringsmuligheder. Brug dansk og vær specifik med tal.\n\n${context}`,
+    spare:   `Du er en venlig dansk økonomicoach. Kig på udgiftskategorierne og giv 3-5 konkrete, realistiske sparetips baseret på de faktiske udgifter. Vær specifik og brug tallene.\n\n${context}`,
+    maal:    `Du er en venlig dansk økonomicoach. Beregn hvornår denne person realistisk når hvert af sine mål baseret på nuværende opsparing og indkomst. Giv konkrete tidsperspektiver og råd til at nå dem hurtigere.\n\n${context}`,
+    fordel:  `Du er en venlig dansk økonomicoach. Lav en konkret månedlig budget-plan der viser præcis hvordan denne person bør fordele sin indkomst for at nå sine mål hurtigst muligt. Brug 50/30/20-reglen som udgangspunkt men tilpas til personens situation.\n\n${context}`,
+    custom:  `Du er en venlig dansk økonomicoach. Svar på dette spørgsmål baseret på personens økonomidata:\n\nSpørgsmål: ${document.getElementById('coach-custom').value}\n\n${context}`
+  };
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompts[type] }]
+      })
+    });
+    const data = await res.json();
+    loading.style.display = 'none';
+    response.textContent = data.content?.[0]?.text || 'Kunne ikke hente svar — prøv igen.';
+  } catch(e) {
+    loading.style.display = 'none';
+    response.textContent = 'Fejl: ' + e.message;
+  }
+}
+
+// ── ENGANGSBELØB ──────────────────────────────────────────────────
+function renderLumpSplit() {
+  const amount   = parseFloat(document.getElementById('lump-amount')?.value) || 0;
+  const strategy = document.getElementById('lump-strategy')?.value || 'prioritet';
+  const type     = document.getElementById('lump-type')?.value || 'bonus';
+  const res      = document.getElementById('lump-result');
+  const askBtn   = document.getElementById('lump-ask-coach');
+  if (!res) return;
+
+  if (amount <= 0) {
+    res.innerHTML = '<div class="no-data">Indtast et beløb til venstre</div>';
+    if (askBtn) askBtn.style.display = 'none';
+    return;
+  }
+
+  if (goals.length === 0) {
+    res.innerHTML = '<div class="no-data">Tilføj mål under 🎯 Mål-fanen for at få en fordeling</div>';
+    if (askBtn) askBtn.style.display = 'none';
+    return;
+  }
+
+  // Filtrer mål der ikke er nået endnu
+  const activeGoals = goals.filter(g => g.saved_amount < g.target_amount);
+  if (activeGoals.length === 0) {
+    res.innerHTML = '<div class="no-data" style="color:var(--accent2)">🎉 Alle dine mål er nået!</div>';
+    return;
+  }
+
+  let allocations = [];
+
+  if (strategy === 'prioritet') {
+    const totalWeight = activeGoals.reduce((s, g) => s + (4 - g.priority), 0);
+    allocations = activeGoals.map(g => ({
+      goal: g,
+      amount: Math.round(amount * ((4 - g.priority) / totalWeight))
+    }));
+
+  } else if (strategy === 'lige') {
+    const each = Math.round(amount / activeGoals.length);
+    allocations = activeGoals.map(g => ({ goal: g, amount: each }));
+
+  } else if (strategy === 'hast') {
+    // Find det mål der er tættest på at være nået
+    const sorted = [...activeGoals].sort((a, b) => {
+      const remA = a.target_amount - a.saved_amount;
+      const remB = b.target_amount - b.saved_amount;
+      return remA - remB;
+    });
+    const nearest = sorted[0];
+    const needed = nearest.target_amount - nearest.saved_amount;
+    const toNearest = Math.min(amount, needed);
+    const leftover = amount - toNearest;
+    allocations = [{ goal: nearest, amount: toNearest }];
+    if (leftover > 0 && sorted.length > 1) {
+      const rest = sorted.slice(1);
+      const eachRest = Math.round(leftover / rest.length);
+      rest.forEach(g => allocations.push({ goal: g, amount: eachRest }));
+    }
+
+  } else if (strategy === 'noedfond') {
+    const noedfond = activeGoals.find(g => g.emoji === '🛡️' || g.name.toLowerCase().includes('nød'));
+    if (noedfond) {
+      const needed = noedfond.target_amount - noedfond.saved_amount;
+      const toFond = Math.min(amount, needed);
+      const leftover = amount - toFond;
+      allocations = [{ goal: noedfond, amount: toFond }];
+      const rest = activeGoals.filter(g => g.id !== noedfond.id);
+      if (leftover > 0 && rest.length > 0) {
+        const totalWeight = rest.reduce((s, g) => s + (4 - g.priority), 0);
+        rest.forEach(g => allocations.push({
+          goal: g,
+          amount: Math.round(leftover * ((4 - g.priority) / totalWeight))
+        }));
+      }
+    } else {
+      // Ingen nødfond fundet — brug prioritet
+      const totalWeight = activeGoals.reduce((s, g) => s + (4 - g.priority), 0);
+      allocations = activeGoals.map(g => ({
+        goal: g,
+        amount: Math.round(amount * ((4 - g.priority) / totalWeight))
+      }));
+    }
+  }
+
+  // Cap allokering ved resterende beløb til hvert mål
+  allocations = allocations.map(a => ({
+    ...a,
+    amount: Math.min(a.amount, Math.round(a.goal.target_amount - a.goal.saved_amount)),
+    capped: a.amount > (a.goal.target_amount - a.goal.saved_amount)
+  }));
+
+  const totalAllocated = allocations.reduce((s, a) => s + a.amount, 0);
+  const leftover = amount - totalAllocated;
+
+  const typeLabels = { bonus:'bonus', ferie:'feriepenge', freelance:'freelance-betaling', gave:'gave/arv', salg:'salg', andet:'beløb' };
+
+  res.innerHTML = `
+    <p style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6">
+      Sådan anbefaler jeg du fordeler din <strong style="color:var(--text)">${typeLabels[type] || 'betaling'}</strong> på <strong style="color:var(--accent)">${amount.toLocaleString('da-DK')} kr</strong>:
+    </p>
+    ${allocations.map(a => {
+      const newPct = Math.min(100, Math.round(((a.goal.saved_amount + a.amount) / a.goal.target_amount) * 100));
+      const rem = a.goal.target_amount - a.goal.saved_amount - a.amount;
+      return `
+        <div class="split-row">
+          <div style="display:flex;align-items:center;gap:0.6rem;flex:1">
+            <span style="font-size:1.1rem">${a.goal.emoji}</span>
+            <div>
+              <div class="split-label">${a.goal.name}</div>
+              <div class="split-sub">
+                ${newPct >= 100 ? '🎉 Mål nået med dette beløb!' : `Op til ${newPct}% · ${rem > 0 ? rem.toLocaleString('da-DK')+' kr tilbage' : 'færdig!'}`}
+              </div>
+            </div>
+          </div>
+          <div class="split-amount">${a.amount.toLocaleString('da-DK')} kr</div>
+        </div>`;
+    }).join('')}
+    ${leftover > 0 ? `
+      <div class="split-row" style="border-top:2px solid var(--border2);margin-top:0.5rem;padding-top:1rem">
+        <div><div class="split-label">💸 Til overs</div><div class="split-sub">Alle mål dækket — sæt resten i fri opsparing</div></div>
+        <div class="split-amount" style="color:var(--accent3)">${leftover.toLocaleString('da-DK')} kr</div>
+      </div>` : ''}
+    <div style="margin-top:1.25rem;padding:0.75rem 1rem;background:var(--surface2);border-radius:6px;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted);display:flex;justify-content:space-between">
+      <span>Total fordelt</span>
+      <strong style="color:var(--text)">${Math.min(amount, totalAllocated).toLocaleString('da-DK')} / ${amount.toLocaleString('da-DK')} kr</strong>
+    </div>
+  `;
+
+  if (askBtn) askBtn.style.display = 'block';
+}
+
+function lumpAskCoach() {
+  const amount   = document.getElementById('lump-amount')?.value || '?';
+  const type     = document.getElementById('lump-type')?.value || 'bonus';
+  const typeLabels = { bonus:'bonus', ferie:'feriepenge', freelance:'freelance-betaling', gave:'gave/arv', salg:'salg', andet:'engangsbeløb' };
+  document.getElementById('coach-custom').value =
+    `Jeg har fået ${parseFloat(amount).toLocaleString('da-DK')} kr i ${typeLabels[type] || 'engangsbeløb'}. Hvordan fordeler jeg dem bedst på mine mål, og hvad giver mest mening at prioritere?`;
+  setBudgetTab('coach', document.querySelector('[onclick*="coach"]'));
+  setTimeout(() => runCoach('custom'), 200);
+}
+
+
 function setBudgetTab(tab, btn) {
-  ['oversigt','transaktioner','faste','tilfoej'].forEach(t => document.getElementById('btab-'+t).style.display=t===tab?'block':'none');
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
-  if (tab==='oversigt') setTimeout(renderBudgetChart,100);
+  ['oversigt','maal','fordeling','coach','transaktioner','faste','tilfoej','import'].forEach(t => {
+    const el = document.getElementById('btab-'+t);
+    if (el) el.style.display = t===tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab === 'oversigt') setTimeout(renderBudgetChart, 100);
+  if (tab === 'fordeling') setTimeout(renderSplit, 50);
 }
 
 // ── HOME STATS ────────────────────────────────────────────────────
