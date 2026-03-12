@@ -279,6 +279,7 @@
     <nav class="nav-section">
       <div class="nav-label">Oversigt</div>
       <button class="nav-item active" onclick="showPage('home',this)"><span class="icon">⊞</span><span>Hjem</span></button>
+      <button class="nav-item" onclick="showPage('morgen',this)"><span class="icon">🌅</span><span>God morgen</span></button>
       <div class="nav-label" style="margin-top:1.5rem">Apps</div>
       <button class="nav-item" onclick="showPage('timer',this)"><span class="icon">◉</span><span>Focus Timer</span></button>
       <button class="nav-item" onclick="showPage('vaner',this)"><span class="icon">◈</span><span>Vaner</span></button>
@@ -313,6 +314,74 @@
         <div class="app-card" onclick="showPage('vaner',document.querySelectorAll('.nav-item')[2])"><span class="app-icon">◈</span><div class="app-name">Vaner</div><div class="app-desc">Daglige vaner, streaks og ugentlig oversigt</div></div>
         <div class="app-card" onclick="showPage('budget',document.querySelectorAll('.nav-item')[3])"><span class="app-icon">◧</span><div class="app-name">Budget</div><div class="app-desc">Indtægter, udgifter og månedsoversigt</div></div>
         <div class="app-card coming-soon"><span class="soon-tag">Snart</span><span class="app-icon">◱</span><div class="app-name">Noter</div><div class="app-desc">Hurtige noter og tjeklister</div></div>
+      </div>
+    </div>
+
+    <!-- GOD MORGEN -->
+    <div class="page" id="page-morgen">
+      <div class="morgen-wrap">
+
+        <!-- Øverst: dato + hilsen -->
+        <div class="morgen-hero">
+          <div class="morgen-time" id="morgen-clock">—</div>
+          <div class="morgen-date" id="morgen-date">—</div>
+          <div class="morgen-greeting" id="morgen-greeting">—</div>
+          <div class="morgen-quote" id="morgen-quote"></div>
+        </div>
+
+        <!-- Grid: vaner + kalender + fokus -->
+        <div class="morgen-grid">
+
+          <!-- Vaner i dag -->
+          <div class="morgen-card">
+            <div class="morgen-card-header">
+              <span>◈ Vaner i dag</span>
+              <span class="morgen-card-sub" id="morgen-habit-pct">0 / 0</span>
+            </div>
+            <div class="morgen-progress-track"><div class="morgen-progress-fill" id="morgen-habit-bar" style="width:0%"></div></div>
+            <div id="morgen-habits-list" style="margin-top:1rem"></div>
+          </div>
+
+          <!-- Dagens kalender -->
+          <div class="morgen-card">
+            <div class="morgen-card-header">
+              <span>📅 Kalenderen i dag</span>
+              <button onclick="refreshMorgenCalendar()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.8rem;transition:color 0.2s" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">↻</button>
+            </div>
+            <div id="morgen-calendar-list"><div class="no-data" style="padding:1rem 0;font-size:0.75rem">Henter kalender...</div></div>
+          </div>
+
+          <!-- Fokus + budget snapshot -->
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            <div class="morgen-card">
+              <div class="morgen-card-header"><span>◉ Fokus i dag</span></div>
+              <div style="display:flex;align-items:center;gap:1rem;margin-top:0.75rem">
+                <div style="text-align:center">
+                  <div style="font-size:2rem;font-weight:800;color:var(--accent)" id="morgen-sessions">0</div>
+                  <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted)">sessioner</div>
+                </div>
+                <div style="text-align:center">
+                  <div style="font-size:2rem;font-weight:800;color:var(--accent2)" id="morgen-focus-mins">0</div>
+                  <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted)">minutter fokus</div>
+                </div>
+              </div>
+              <button class="action-btn" style="width:100%;margin-top:1rem" onclick="showPage('timer',document.querySelectorAll('.nav-item')[3])">Start fokussession →</button>
+            </div>
+            <div class="morgen-card">
+              <div class="morgen-card-header"><span>◧ Månedssaldo</span></div>
+              <div style="font-size:1.8rem;font-weight:800;margin-top:0.75rem" id="morgen-balance">—</div>
+              <div style="font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--muted);margin-top:0.25rem" id="morgen-balance-sub">—</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Dagens intention -->
+        <div class="morgen-card" style="margin-top:1rem">
+          <div class="morgen-card-header"><span>✍️ Dagens intention</span><span class="morgen-card-sub">Hvad vil du fokusere på i dag?</span></div>
+          <textarea id="morgen-intention" placeholder="Skriv én ting du vil opnå i dag..." style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'Syne',sans-serif;font-size:1rem;padding:0.75rem 0;outline:none;resize:none;margin-top:0.75rem;min-height:60px" oninput="saveMorgenIntention()"></textarea>
+        </div>
+
       </div>
     </div>
 
@@ -751,6 +820,7 @@ function showPage(id, btn) {
   document.getElementById('page-' + id).classList.add('active');
   if (btn) btn.classList.add('active');
   if (id === 'budget') setTimeout(renderBudgetChart, 100);
+  if (id === 'morgen') initMorgenPage();
 }
 
 // ── TIMER ─────────────────────────────────────────────────────────
@@ -1851,7 +1921,203 @@ function setBudgetTab(tab, btn) {
   if (tab === 'fordeling') setTimeout(renderSplit, 50);
 }
 
-// ── HOME STATS ────────────────────────────────────────────────────
+// ── GOD MORGEN ────────────────────────────────────────────────────
+const QUOTES = [
+  'Små skridt hver dag bygger store resultater.',
+  'Konsistens slår motivation hver gang.',
+  'Du behøver ikke være perfekt — du skal bare starte.',
+  'Vaner er renten på selvforbedring.',
+  'Det, du gør i dag, er investering i din fremtid.',
+  'Fremskridt, ikke perfektion.',
+  'Én god dag bygger på den næste.',
+  'Disciplin er at vælge, hvad du vil have på lang sigt over, hvad du vil have nu.',
+  'Din have vokser én dag ad gangen.',
+  'Den bedste tid at starte var i går. Den næste bedste er nu.',
+];
+
+let morgenClockInterval = null;
+
+function initMorgenPage() {
+  updateMorgenClock();
+  if (morgenClockInterval) clearInterval(morgenClockInterval);
+  morgenClockInterval = setInterval(updateMorgenClock, 1000);
+  updateMorgenGreeting();
+  updateMorgenHabits();
+  updateMorgenStats();
+  updateMorgenBalance();
+  loadMorgenIntention();
+  refreshMorgenCalendar();
+
+  // Tilfældig quote, skifter dagligt
+  const qi = new Date().getDate() % QUOTES.length;
+  document.getElementById('morgen-quote').textContent = '"' + QUOTES[qi] + '"';
+}
+
+function updateMorgenClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  const el = document.getElementById('morgen-clock');
+  if (el) el.textContent = `${h}:${m}:${s}`;
+}
+
+function updateMorgenGreeting() {
+  const now = new Date();
+  const h = now.getHours();
+  let hilsen = h < 10 ? 'God morgen' : h < 12 ? 'Godmorgen' : h < 17 ? 'God eftermiddag' : 'God aften';
+  const name = document.getElementById('sidebar-name')?.textContent || '';
+  const firstName = name.split('@')[0].split(' ')[0];
+
+  const dage = ['søndag','mandag','tirsdag','onsdag','torsdag','fredag','lørdag'];
+  const måneder = ['januar','februar','marts','april','maj','juni','juli','august','september','oktober','november','december'];
+  const datoStr = `${dage[now.getDay()]} d. ${now.getDate()}. ${måneder[now.getMonth()]} ${now.getFullYear()}`;
+
+  const grEl = document.getElementById('morgen-greeting');
+  const dtEl = document.getElementById('morgen-date');
+  if (grEl) grEl.textContent = `${hilsen}${firstName && firstName !== '—' ? ', ' + firstName : ''} 👋`;
+  if (dtEl) dtEl.textContent = datoStr;
+}
+
+function updateMorgenHabits() {
+  const today = new Date().toISOString().split('T')[0];
+  const activeToday = habits.filter(h => isHabitActiveToday(h));
+  const doneToday  = activeToday.filter(h => habitLogs.some(l => l.habit_id === h.id && l.log_date === today));
+  const total = activeToday.length;
+  const done  = doneToday.length;
+  const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  const pctEl = document.getElementById('morgen-habit-pct');
+  const barEl = document.getElementById('morgen-habit-bar');
+  const listEl = document.getElementById('morgen-habits-list');
+  if (pctEl) pctEl.textContent = `${done} / ${total}`;
+  if (barEl) barEl.style.width = pct + '%';
+
+  if (!listEl) return;
+  if (activeToday.length === 0) {
+    listEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:0.72rem;color:var(--muted)">Ingen vaner i dag</div>';
+    return;
+  }
+  listEl.innerHTML = '';
+  activeToday.forEach(h => {
+    const isDone = habitLogs.some(l => l.habit_id === h.id && l.log_date === today);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--border)';
+    row.innerHTML = `
+      <div style="width:22px;height:22px;border-radius:50%;border:2px solid ${isDone ? 'var(--accent2)' : 'var(--border2)'};background:${isDone ? 'var(--accent2)' : 'none'};display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0;color:#000">${isDone ? '✓' : ''}</div>
+      <span style="font-size:0.85rem;font-weight:600;${isDone ? 'text-decoration:line-through;color:var(--muted)' : ''}">${h.name}</span>
+      ${isDone ? '' : `<button onclick="quickCheckHabit('${h.id}')" style="margin-left:auto;background:rgba(74,222,128,0.1);border:1px solid var(--accent2);border-radius:4px;color:var(--accent2);cursor:pointer;font-family:'DM Mono',monospace;font-size:0.65rem;padding:0.2rem 0.5rem">Klaret ✓</button>`}
+    `;
+    listEl.appendChild(row);
+  });
+}
+
+async function quickCheckHabit(habitId) {
+  const today = new Date().toISOString().split('T')[0];
+  const habit = habits.find(h => h.id === habitId);
+  if (!habit) return;
+  const already = habitLogs.find(l => l.habit_id === habitId && l.log_date === today);
+  if (already) return;
+  const { data } = await sb.from('habit_logs').insert({ user_id: currentUserId, habit_id: habitId, log_date: today, amount: 1 }).select().single();
+  if (data) {
+    habitLogs.push(data);
+    updateMorgenHabits();
+    updateMorgenStats();
+    renderHabits();
+    updateHomeStats();
+  }
+}
+
+function updateMorgenStats() {
+  const focusSessions = timerSessions.filter(s => s.mode === 'focus').length;
+  const focusMins     = timerSessions.filter(s => s.mode === 'focus').reduce((sum, s) => sum + (s.duration || 0), 0);
+  const sEl = document.getElementById('morgen-sessions');
+  const mEl = document.getElementById('morgen-focus-mins');
+  if (sEl) sEl.textContent = focusSessions;
+  if (mEl) mEl.textContent = focusMins;
+}
+
+function updateMorgenBalance() {
+  const inc = transactions.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0);
+  const exp = transactions.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount, 0);
+  const fix = fixedExpenses.reduce((s,f) => s+f.amount, 0);
+  const bal = inc - exp - fix;
+  const bEl   = document.getElementById('morgen-balance');
+  const subEl = document.getElementById('morgen-balance-sub');
+  if (bEl) {
+    bEl.textContent = bal.toLocaleString('da-DK') + ' kr';
+    bEl.style.color = bal >= 0 ? 'var(--accent2)' : 'var(--danger)';
+  }
+  if (subEl) subEl.textContent = bal >= 0 ? 'Du er i plus denne måned 👍' : 'Du er i minus denne måned';
+}
+
+async function refreshMorgenCalendar() {
+  const listEl = document.getElementById('morgen-calendar-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:0.72rem;color:var(--muted)">Henter kalender...</div>';
+  try {
+    const now   = new Date();
+    const today = now.toISOString().split('T')[0];
+    const end   = today + 'T23:59:59';
+    const start = today + 'T00:00:00';
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 800,
+        mcp_servers: [{ type: 'url', url: 'https://gcal.mcp.claude.com/mcp', name: 'gcal' }],
+        messages: [{
+          role: 'user',
+          content: `Hent kalenderbegivenheder for i dag (${today}) fra primær kalender. TimeMin: ${start}, TimeMax: ${end}, timeZone: Europe/Copenhagen. Svar KUN med JSON-array (ingen markdown, ingen forklaring), format: [{"summary":"navn","start":"HH:MM","end":"HH:MM","allDay":false}]. Hvis ingen begivenheder, svar med [].`
+        }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content?.find(c => c.type === 'text')?.text || '[]';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    let events = [];
+    try { events = JSON.parse(clean); } catch(e) { events = []; }
+
+    if (!Array.isArray(events) || events.length === 0) {
+      listEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:0.72rem;color:var(--muted);padding:0.5rem 0">Ingen begivenheder i dag 🎉</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    events.forEach(ev => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--border)';
+      const timeStr = ev.allDay ? 'Heldagsbegivenhed' : `${ev.start || ''}${ev.end ? '–' + ev.end : ''}`;
+      row.innerHTML = `
+        <div style="width:3px;height:36px;background:var(--accent);border-radius:2px;flex-shrink:0"></div>
+        <div>
+          <div style="font-size:0.85rem;font-weight:600">${ev.summary || 'Unavngivet'}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted)">${timeStr}</div>
+        </div>`;
+      listEl.appendChild(row);
+    });
+  } catch(e) {
+    listEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:0.72rem;color:var(--muted)">Kunne ikke hente kalender</div>';
+  }
+}
+
+function saveMorgenIntention() {
+  const val = document.getElementById('morgen-intention')?.value || '';
+  const today = new Date().toISOString().split('T')[0];
+  try { localStorage.setItem('morgen-intention-' + today, val); } catch(e) {}
+}
+
+function loadMorgenIntention() {
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    const saved = localStorage.getItem('morgen-intention-' + today) || '';
+    const el = document.getElementById('morgen-intention');
+    if (el) el.value = saved;
+  } catch(e) {}
+}
+
+
 function updateHomeStats() {
   document.getElementById('stat-sessions').textContent=timerSessions.filter(s=>s.mode==='focus').length;
   const today=new Date().toISOString().split('T')[0];
