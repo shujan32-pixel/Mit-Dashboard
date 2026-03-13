@@ -72,13 +72,27 @@ function sendNotification(title, body) { if (Notification.permission === 'grante
 function showPage(id, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.mobile-nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   if (btn) btn.classList.add('active');
+  // Synkroniser mobil bottom nav
+  const mobileMap = { morgen:0, vaner:1, budget:2, noter:3 };
+  if (mobileMap[id] !== undefined) {
+    const mobileItems = document.querySelectorAll('.mobile-nav-item');
+    if (mobileItems[mobileMap[id]]) mobileItems[mobileMap[id]].classList.add('active');
+  }
   if (id === 'budget') setTimeout(renderBudgetChart, 100);
   if (id === 'morgen') initMorgenPage();
   if (id === 'nyheder') initNews();
   if (id === 'noter') loadNotes();
   if (id === 'review') { reviewWeekOffset = 0; loadReview(); }
+}
+
+function showMobileMenu() {
+  document.getElementById('mobile-more-menu').style.display = 'block';
+}
+function hideMobileMenu() {
+  document.getElementById('mobile-more-menu').style.display = 'none';
 }
 
 // ── TIMER ─────────────────────────────────────────────────────────

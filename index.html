@@ -761,6 +761,39 @@
   </main>
 </div>
 
+<!-- MOBIL BOTTOM NAV -->
+<nav class="mobile-nav">
+  <button class="mobile-nav-item active" onclick="showPage('morgen',this)">
+    <span class="mn-icon">🌅</span><span>Dag</span>
+  </button>
+  <button class="mobile-nav-item" onclick="showPage('vaner',this)">
+    <span class="mn-icon">◈</span><span>Vaner</span>
+  </button>
+  <button class="mobile-nav-item" onclick="showPage('budget',this)">
+    <span class="mn-icon">◧</span><span>Budget</span>
+  </button>
+  <button class="mobile-nav-item" onclick="showPage('noter',this)">
+    <span class="mn-icon">◱</span><span>Noter</span>
+  </button>
+  <button class="mobile-nav-item" onclick="showMobileMenu()">
+    <span class="mn-icon">⋯</span><span>Mere</span>
+  </button>
+</nav>
+
+<!-- MOBIL MERE-MENU -->
+<div id="mobile-more-menu" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:var(--surface);border-top:1px solid var(--border2);padding:1rem;padding-bottom:env(safe-area-inset-bottom,1rem)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:0.9rem">Mere</span>
+    <button onclick="hideMobileMenu()" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer">✕</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+    <button onclick="hideMobileMenu();showPage('timer',null)" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.85rem;display:flex;flex-direction:column;align-items:center;gap:0.35rem;cursor:pointer;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--text)"><span style="font-size:1.5rem">◉</span>Focus Timer</button>
+    <button onclick="hideMobileMenu();showPage('nyheder',null)" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.85rem;display:flex;flex-direction:column;align-items:center;gap:0.35rem;cursor:pointer;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--text)"><span style="font-size:1.5rem">📰</span>Nyheder</button>
+    <button onclick="hideMobileMenu();showPage('review',null)" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.85rem;display:flex;flex-direction:column;align-items:center;gap:0.35rem;cursor:pointer;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--text)"><span style="font-size:1.5rem">📊</span>Review</button>
+    <button onclick="hideMobileMenu();doLogout()" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.85rem;display:flex;flex-direction:column;align-items:center;gap:0.35rem;cursor:pointer;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--danger)"><span style="font-size:1.5rem">⎋</span>Log ud</button>
+  </div>
+</div>
+
 <script src="app.js"></script>
 </body>
 </html>

@@ -293,14 +293,85 @@
 
   @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
   @media (max-width:900px) { .two-col, .budget-grid { grid-template-columns:1fr; } }
+  /* ── MOBIL (max 768px) ───────────────────────────────────────── */
   @media (max-width:768px) {
-    .sidebar { width:60px; padding:1.5rem 0; }
-    .sidebar-logo, .nav-label, .nav-item span:not(.icon), .nav-badge, .user-info, .logout-btn { display:none; }
-    .nav-item { justify-content:center; padding:0.6rem; }
-    .sidebar-footer { padding:1rem 0.5rem 0; }
-    .user-row { justify-content:center; }
-    .main { margin-left:60px; padding:1.5rem; }
-    .stats-row, .budget-summary { grid-template-columns:1fr; }
+
+    /* Sidebar gemmes — bottom nav overtager */
+    .sidebar { display:none; }
+    .main { margin-left:0; padding:1.25rem 1rem 5rem; }
+
+    /* Bottom navigation bar */
+    .mobile-nav {
+      display:flex !important;
+      position:fixed; bottom:0; left:0; right:0; z-index:200;
+      background:var(--surface);
+      border-top:1px solid var(--border2);
+      padding:0.5rem 0.25rem env(safe-area-inset-bottom, 0.5rem);
+      gap:0.1rem;
+      backdrop-filter:blur(12px);
+    }
+    .mobile-nav-item {
+      flex:1; display:flex; flex-direction:column; align-items:center; gap:0.2rem;
+      padding:0.4rem 0.2rem; border:none; background:none; cursor:pointer;
+      color:var(--muted); border-radius:8px; transition:color 0.15s, background 0.15s;
+      font-family:'DM Mono',monospace; font-size:0.52rem; letter-spacing:0.02em;
+    }
+    .mobile-nav-item .mn-icon { font-size:1.2rem; line-height:1; }
+    .mobile-nav-item.active { color:var(--accent); }
+    .mobile-nav-item:active { background:rgba(124,109,250,0.1); }
+
+    /* Page header */
+    .page-header { flex-direction:column; align-items:flex-start; gap:0.75rem; margin-bottom:1.5rem; }
+    .page-header .action-btn { width:100%; justify-content:center; }
+
+    /* Dagsoverblik */
+    .mg-wrap { padding:1rem 0 4rem; }
+    .mg-hero { padding:1.5rem; text-align:center; }
+    .mg-time-row { justify-content:center; flex-wrap:wrap; }
+    .mg-clock { font-size:3.5rem; }
+    .mg-name { font-size:2rem; }
+    .mg-greeting { font-size:1rem; }
+    .mg-grid { grid-template-columns:1fr; }
+    .mg-intention-wrap { margin-bottom:1rem; }
+
+    /* Vejr timeoversigt */
+    #weather-forecast { gap:0.4rem; }
+    .weather-hero-badge { display:none; }
+
+    /* Budget */
+    .budget-grid, .two-col, .budget-summary { grid-template-columns:1fr; }
+    .budget-tabs { overflow-x:auto; white-space:nowrap; padding-bottom:0.25rem; -webkit-overflow-scrolling:touch; }
+
+    /* Vaner */
+    .habits-list { grid-template-columns:1fr; }
+
+    /* Noter */
+    .notes-layout { grid-template-columns:1fr; height:auto; }
+    .notes-editor { min-height:350px; }
+
+    /* Ugentlig review */
+    .review-grid { grid-template-columns:1fr; }
+    .review-score-wrap { flex-direction:column; align-items:center; text-align:center; }
+    .review-pillars { justify-content:center; }
+
+    /* Stat cards */
+    .stats-row { grid-template-columns:1fr 1fr; }
+
+    /* Apps grid */
+    .apps-grid { grid-template-columns:1fr 1fr; }
+
+    /* Timer */
+    .timer-wrapper { padding:1rem; }
+
+    /* Generelt */
+    .section-title { font-size:0.75rem; }
+  }
+
+  /* Ekstra lille (iPhone SE etc.) */
+  @media (max-width:380px) {
+    .stats-row, .apps-grid { grid-template-columns:1fr; }
+    .review-pillars { gap:0.5rem; }
+    .review-pillar { min-width:52px; padding:0.4rem 0.5rem; }
   }
 /* NYHEDER */
 .news-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; transition:border-color 0.2s, transform 0.2s; cursor:pointer; text-decoration:none; color:inherit; }
@@ -407,3 +478,6 @@
 .review-goal-fill { height:100%; background:var(--accent); border-radius:4px; transition:width 0.8s ease; }
 .review-goal-meta { display:flex; justify-content:space-between; font-family:'DM Mono',monospace; font-size:0.62rem; color:var(--muted); }
 @media (max-width:900px) { .review-grid { grid-template-columns:1fr; } .review-score-wrap { flex-direction:column; text-align:center; } }
+
+/* Mobile nav skjult på desktop */
+.mobile-nav { display:none; }
