@@ -128,12 +128,12 @@ async function loadSessions() {
   if (!currentUserId) return;
   const today = new Date().toISOString().split('T')[0];
   const { data } = await sb.from('focus_sessions').select('*').eq('user_id',currentUserId).gte('created_at',today+'T00:00:00').order('created_at',{ascending:false});
-  if (data) { timerSessions=data; renderSessions(); updateHomeStats(); }
+  if (data) { timerSessions=data; renderSessions(); updateMorgenHabits(); updateMorgenStats(); updateMorgenBalance(); renderMorgenTodos(); }
 }
 async function logSession(minutes) {
   if (!currentUserId) return;
   const { data } = await sb.from('focus_sessions').insert({user_id:currentUserId,duration:minutes,mode:currentMode}).select().single();
-  if (data) { timerSessions.unshift(data); renderSessions(); updateHomeStats(); }
+  if (data) { timerSessions.unshift(data); renderSessions(); updateMorgenHabits(); updateMorgenStats(); updateMorgenBalance(); renderMorgenTodos(); }
 }
 function renderSessions() {
   const list=document.getElementById('session-list'), none=document.getElementById('no-sessions');
@@ -358,7 +358,7 @@ async function loadHabits() {
   const weekStart=getWeekStart();
   const { data: lData } = await sb.from('habit_logs').select('*').eq('user_id',currentUserId).gte('log_date',weekStart);
   if (lData) habitLogs=lData;
-  renderHabits(); renderWeekGrid(); renderGarden(); updateHomeStats();
+  renderHabits(); renderWeekGrid(); renderGarden(); updateMorgenHabits(); updateMorgenStats(); updateMorgenBalance(); renderMorgenTodos();
   initNotifications();
 }
 
@@ -479,7 +479,7 @@ async function toggleHabit(habitId, done, amtId) {
       }
     }
   }
-  renderHabits(); renderWeekGrid(); renderGarden(); updateHomeStats();
+  renderHabits(); renderWeekGrid(); renderGarden(); updateMorgenHabits(); updateMorgenStats(); updateMorgenBalance(); renderMorgenTodos();
 }
 
 async function deleteHabit(habitId) {
@@ -487,7 +487,7 @@ async function deleteHabit(habitId) {
   await sb.from('habits').delete().eq('id',habitId);
   habits=habits.filter(h=>h.id!==habitId);
   habitLogs=habitLogs.filter(l=>l.habit_id!==habitId);
-  renderHabits(); renderWeekGrid(); renderGarden(); updateHomeStats();
+  renderHabits(); renderWeekGrid(); renderGarden(); updateMorgenHabits(); updateMorgenStats(); updateMorgenBalance(); renderMorgenTodos();
 }
 
 function getStreak(habitId) {
@@ -581,7 +581,7 @@ async function loadBudget() {
   if (txData) transactions=txData;
   const { data: fixData } = await sb.from('fixed_expenses').select('*').eq('user_id',currentUserId).order('created_at');
   if (fixData) fixedExpenses=fixData;
-  renderBudget(); updateHomeStats();
+  renderBudget(); updateMorgenHabits(); updateMorgenStats(); updateMorgenBalance(); renderMorgenTodos();
   loadGoals();
 }
 
@@ -595,7 +595,7 @@ function renderBudget() {
   const bEl=document.getElementById('budget-balance');
   bEl.textContent=balance.toLocaleString('da-DK')+' kr';
   bEl.style.color=balance>=0?'var(--accent2)':'var(--danger)';
-  renderTxList(); renderFixedList(); renderCategoryBars(); updateHomeStats();
+  renderTxList(); renderFixedList(); renderCategoryBars(); updateMorgenHabits(); updateMorgenStats(); updateMorgenBalance(); renderMorgenTodos();
 }
 
 function renderTxList() {
@@ -1288,7 +1288,7 @@ async function quickCheckHabit(habitId) {
     updateMorgenHabits();
     updateMorgenStats();
     renderHabits();
-    updateHomeStats();
+    updateMorgenHabits(); updateMorgenStats(); updateMorgenBalance(); renderMorgenTodos();
   }
 }
 
