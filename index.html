@@ -39,7 +39,6 @@
     <div class="sidebar-logo">Mit<span>.</span>DB</div>
     <nav class="nav-section">
       <div class="nav-label">Oversigt</div>
-      <button class="nav-item" onclick="showPage('home',this)"><span class="icon">⊞</span><span>Hjem</span></button>
       <button class="nav-item active" onclick="showPage('morgen',this)"><span class="icon">🌅</span><span>Dagsoverblik</span></button>
       <div class="nav-label" style="margin-top:1.5rem">Apps</div>
       <button class="nav-item" onclick="showPage('timer',this)"><span class="icon">◉</span><span>Focus Timer</span></button>
@@ -60,28 +59,7 @@
 
   <main class="main">
 
-    <!-- HOME -->
-    <div class="page" id="page-home">
-      <div class="page-header">
-        <div class="greeting">God dag, <span class="name" id="greeting-name">—</span></div>
-        <div class="greeting-sub" id="greeting-date">—</div>
-      </div>
-      <div class="stats-row">
-        <div class="stat-card"><div class="stat-label">Focus-sessioner i dag</div><div class="stat-value" id="stat-sessions">0</div><div class="stat-unit">sessioner</div></div>
-        <div class="stat-card"><div class="stat-label">Vaner klaret i dag</div><div class="stat-value" id="stat-habits">0</div><div class="stat-unit">af <span id="stat-habits-total">0</span></div></div>
-        <div class="stat-card"><div class="stat-label">Månedssaldo</div><div class="stat-value" id="stat-balance">0</div><div class="stat-unit">kr</div></div>
-      </div>
-      <div class="section-title">Dine apps</div>
-      <div class="apps-grid">
-        <div class="app-card" onclick="showPage('timer',document.querySelectorAll('.nav-item')[1])"><span class="app-icon">◉</span><div class="app-name">Focus Timer</div><div class="app-desc">Pomodoro-baseret fokustimer med sessionslog</div></div>
-        <div class="app-card" onclick="showPage('vaner',document.querySelectorAll('.nav-item')[2])"><span class="app-icon">◈</span><div class="app-name">Vaner</div><div class="app-desc">Daglige vaner, streaks og ugentlig oversigt</div></div>
-        <div class="app-card" onclick="showPage('budget',document.querySelectorAll('.nav-item')[3])"><span class="app-icon">◧</span><div class="app-name">Budget</div><div class="app-desc">Indtægter, udgifter og månedsoversigt</div></div>
-        <div class="app-card" onclick="showPage('noter',document.querySelectorAll('.nav-item')[5])"><span class="app-icon">◱</span><div class="app-name">Noter</div><div class="app-desc">Hurtige noter og tjeklister</div></div>
-        <div class="app-card" onclick="showPage('review',document.querySelectorAll('.nav-item')[6])"><span class="app-icon">📊</span><div class="app-name">Ugentlig review</div><div class="app-desc">Ugens overblik — vaner, fokus, budget og mål</div></div>
-      </div>
-    </div>
-
-    <!-- GOD MORGEN -->
+    <!-- DAGSOVERBLIK -->
     <div class="page active" id="page-morgen">
       <div class="mg-wrap">
 

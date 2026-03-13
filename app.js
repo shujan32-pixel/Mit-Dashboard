@@ -47,14 +47,12 @@ function startApp(user) {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   const email = user.email || '';
-  document.getElementById('greeting-name').textContent = 'Shujan';
   document.getElementById('sidebar-name').textContent = 'Shujan';
   document.getElementById('sidebar-email').textContent = email;
   document.getElementById('sidebar-avatar').textContent = 'S';
   const now = new Date();
   const days = ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];
   const months = ['januar','februar','marts','april','maj','juni','juli','august','september','oktober','november','december'];
-  document.getElementById('greeting-date').textContent = `${days[now.getDay()]} · ${now.getDate()}. ${months[now.getMonth()]} ${now.getFullYear()}`;
   document.getElementById('vaner-date').textContent = `${days[now.getDay()]} · ${now.getDate()}. ${months[now.getMonth()]}`;
   document.getElementById('budget-month').textContent = `${months[now.getMonth()]} ${now.getFullYear()}`;
   document.getElementById('tx-month-label').textContent = months[now.getMonth()];
@@ -1333,20 +1331,6 @@ function loadMorgenIntention() {
 }
 
 
-function updateHomeStats() {
-  document.getElementById('stat-sessions').textContent=timerSessions.filter(s=>s.mode==='focus').length;
-  const today=new Date().toISOString().split('T')[0];
-  const done=habits.filter(h=>habitLogs.some(l=>l.habit_id===h.id&&l.log_date===today)).length;
-  document.getElementById('stat-habits').textContent=done;
-  document.getElementById('stat-habits-total').textContent=habits.length;
-  const inc=transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-  const exp=transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
-  const fix=fixedExpenses.reduce((s,f)=>s+f.amount,0);
-  const bal=inc-exp-fix;
-  const balEl=document.getElementById('stat-balance');
-  balEl.textContent=bal.toLocaleString('da-DK');
-  balEl.style.color=bal>=0?'var(--accent2)':'var(--danger)';
-}
 // ── NYHEDER ───────────────────────────────────────────────────────
 // RSS feeds via rss2json.com — ingen API-nøgle nødvendig
 const NEWS_FEEDS = {
