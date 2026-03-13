@@ -338,17 +338,29 @@
     .mg-card { padding:1rem; }
     .mg-card-top { margin-bottom:0.75rem; }
     .mg-balance { font-size:1.6rem; }
-    /* Vejr kort — inline grid til 2 kolonner er ok, men lidt smallere */
-    #weather-details { gap:0.4rem !important; }
-    .weather-detail-item { padding:0.35rem 0.5rem; }
-    .weather-detail-lbl { font-size:0.58rem; }
-    .weather-detail-val { font-size:0.75rem; }
+    /* Vejr kort — kompakt på mobil */
+    #weather-card .mg-card-top { margin-bottom:0.5rem; }
+    #weather-main { margin:0.4rem 0 !important; gap:0.75rem !important; }
+    #weather-icon-big { font-size:2rem !important; }
+    #weather-temp-big { font-size:1.4rem !important; }
+    #weather-desc { font-size:0.68rem !important; }
+    #weather-details { gap:0.35rem !important; margin-top:0.4rem !important; }
+    .weather-detail-item { padding:0.3rem 0.4rem; }
+    .weather-detail-lbl { font-size:0.56rem; }
+    .weather-detail-val { font-size:0.7rem; }
+    #weather-forecast { margin-top:0.6rem !important; }
+    .weather-hour { min-width:42px; padding:0.35rem 0.3rem; }
+    .weather-hour-time { font-size:0.54rem; }
+    .weather-hour-icon { font-size:1rem; }
+    .weather-hour-temp { font-size:0.64rem; }
+    .weather-hour-rain { font-size:0.54rem; }
+
+    /* Fokus stats — brug DM Mono så "0" ikke ser oval ud */
+    .mg-stat-val { font-family:'DM Mono',monospace; font-size:1.8rem; letter-spacing:-0.02em; }
+    .mg-stat-lbl { font-size:0.58rem; }
+
     /* To-do widget */
     #morgen-todo-list { gap:0.2rem; }
-
-    /* Vejr timeoversigt */
-    #weather-forecast { gap:0.4rem; }
-    .weather-hero-badge { display:none; }
 
     /* Budget */
     .budget-grid, .two-col, .budget-summary { grid-template-columns:1fr; }
