@@ -1206,7 +1206,6 @@ function initMorgenPage() {
   updateMorgenStats();
   updateMorgenBalance();
   loadMorgenIntention();
-  refreshMorgenCalendar();
   renderMorgenTodos();
   loadWeather();
 
@@ -1316,57 +1315,6 @@ function updateMorgenBalance() {
     bEl.style.color = bal >= 0 ? 'var(--accent2)' : 'var(--danger)';
   }
   if (subEl) subEl.textContent = bal >= 0 ? 'Du er i plus denne måned 👍' : 'Du er i minus denne måned';
-}
-
-async function refreshMorgenCalendar() {
-  const listEl = document.getElementById('morgen-calendar-list');
-  if (!listEl) return;
-  listEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:0.72rem;color:var(--muted)">Henter kalender...</div>';
-  try {
-    const now   = new Date();
-    const today = now.toISOString().split('T')[0];
-    const end   = today + 'T23:59:59';
-    const start = today + 'T00:00:00';
-
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 800,
-        mcp_servers: [{ type: 'url', url: 'https://gcal.mcp.claude.com/mcp', name: 'gcal' }],
-        messages: [{
-          role: 'user',
-          content: `Hent kalenderbegivenheder for i dag (${today}) fra primær kalender. TimeMin: ${start}, TimeMax: ${end}, timeZone: Europe/Copenhagen. Svar KUN med JSON-array (ingen markdown, ingen forklaring), format: [{"summary":"navn","start":"HH:MM","end":"HH:MM","allDay":false}]. Hvis ingen begivenheder, svar med [].`
-        }]
-      })
-    });
-    const data = await res.json();
-    const raw = data.content?.find(c => c.type === 'text')?.text || '[]';
-    const clean = raw.replace(/```json|```/g, '').trim();
-    let events = [];
-    try { events = JSON.parse(clean); } catch(e) { events = []; }
-
-    if (!Array.isArray(events) || events.length === 0) {
-      listEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:0.72rem;color:var(--muted);padding:0.5rem 0">Ingen begivenheder i dag 🎉</div>';
-      return;
-    }
-    listEl.innerHTML = '';
-    events.forEach(ev => {
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--border)';
-      const timeStr = ev.allDay ? 'Heldagsbegivenhed' : `${ev.start || ''}${ev.end ? '–' + ev.end : ''}`;
-      row.innerHTML = `
-        <div style="width:3px;height:36px;background:var(--accent);border-radius:2px;flex-shrink:0"></div>
-        <div>
-          <div style="font-size:0.85rem;font-weight:600">${ev.summary || 'Unavngivet'}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted)">${timeStr}</div>
-        </div>`;
-      listEl.appendChild(row);
-    });
-  } catch(e) {
-    listEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:0.72rem;color:var(--muted)">Kunne ikke hente kalender</div>';
-  }
 }
 
 function saveMorgenIntention() {
