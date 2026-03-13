@@ -2,7 +2,11 @@
 <html lang="da">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mit Dashboard">
+<meta name="theme-color" content="#0a0a0b">
 <title>Mit Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -35,8 +39,15 @@
 </div>
 
 <div id="app">
+  <!-- MOBIL TOP HEADER -->
+  <header class="mobile-header" id="mobile-header" style="display:none">
+    <div class="mobile-header-logo" onclick="showPage('morgen',null)">Mit<span>.</span>DB</div>
+    <div id="mobile-header-title" class="mobile-header-title">Dagsoverblik</div>
+    <button onclick="showPage('morgen',null)" class="mobile-home-btn" title="Gå til forsiden">🌅</button>
+  </header>
+
   <aside class="sidebar">
-    <div class="sidebar-logo">Mit<span>.</span>DB</div>
+    <div class="sidebar-logo" onclick="showPage('morgen',document.querySelector('.nav-item'))" style="cursor:pointer" title="Gå til forsiden">Mit<span>.</span>DB</div>
     <nav class="nav-section">
       <div class="nav-label">Oversigt</div>
       <button class="nav-item active" onclick="showPage('morgen',this)"><span class="icon">🌅</span><span>Dagsoverblik</span></button>
@@ -762,7 +773,7 @@
 </div>
 
 <!-- MOBIL BOTTOM NAV -->
-<nav class="mobile-nav">
+<nav class="mobile-nav" id="mobile-nav" style="display:none">
   <button class="mobile-nav-item active" onclick="showPage('morgen',this)">
     <span class="mn-icon">🌅</span><span>Dag</span>
   </button>

@@ -46,6 +46,9 @@ function startApp(user) {
   document.getElementById('loading-screen').style.display = 'none';
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
+  // Vis mobil navigation efter login
+  document.getElementById('mobile-nav').style.display = '';
+  document.getElementById('mobile-header').style.display = '';
   const email = user.email || '';
   document.getElementById('sidebar-name').textContent = 'Shujan';
   document.getElementById('sidebar-email').textContent = email;
@@ -81,18 +84,17 @@ function showPage(id, btn) {
     const mobileItems = document.querySelectorAll('.mobile-nav-item');
     if (mobileItems[mobileMap[id]]) mobileItems[mobileMap[id]].classList.add('active');
   }
+  // Opdatér mobil top-header titel
+  const titles = { morgen:'Dagsoverblik', vaner:'Vaner', budget:'Budget', noter:'Noter', timer:'Focus Timer', nyheder:'Nyheder', review:'Ugentlig Review' };
+  const titleEl = document.getElementById('mobile-header-title');
+  if (titleEl) titleEl.textContent = titles[id] || '';
+  // Skjul mere-menu hvis åben
+  hideMobileMenu();
   if (id === 'budget') setTimeout(renderBudgetChart, 100);
   if (id === 'morgen') initMorgenPage();
   if (id === 'nyheder') initNews();
   if (id === 'noter') loadNotes();
   if (id === 'review') { reviewWeekOffset = 0; loadReview(); }
-}
-
-function showMobileMenu() {
-  document.getElementById('mobile-more-menu').style.display = 'block';
-}
-function hideMobileMenu() {
-  document.getElementById('mobile-more-menu').style.display = 'none';
 }
 
 // ── TIMER ─────────────────────────────────────────────────────────
@@ -2336,4 +2338,12 @@ Giv en kort, ærlig og motiverende refleksion på dansk (maks 5 sætninger). Væ
     btn.textContent = '✨ Analysér min uge';
   }
   btn.disabled = false;
+}
+
+function showMobileMenu() {
+  document.getElementById('mobile-more-menu').style.display = 'block';
+}
+function hideMobileMenu() {
+  const el = document.getElementById('mobile-more-menu');
+  if (el) el.style.display = 'none';
 }

@@ -481,3 +481,36 @@
 
 /* Mobile nav skjult på desktop */
 .mobile-nav { display:none; }
+
+/* MOBIL TOP HEADER */
+.mobile-header { display:none; }
+@media (max-width:768px) {
+  .mobile-header {
+    display:flex !important;
+    position:fixed; top:0; left:0; right:0; z-index:150;
+    background:var(--surface);
+    border-bottom:1px solid var(--border2);
+    padding:0.75rem 1rem;
+    padding-top:calc(0.75rem + env(safe-area-inset-top, 0px));
+    align-items:center;
+    justify-content:space-between;
+    backdrop-filter:blur(12px);
+  }
+  .mobile-header-logo {
+    font-family:'Syne',sans-serif; font-weight:800; font-size:1.1rem;
+    letter-spacing:-0.02em; cursor:pointer;
+  }
+  .mobile-header-logo span { color:var(--accent); }
+  .mobile-header-title {
+    font-family:'DM Mono',monospace; font-size:0.72rem;
+    color:var(--muted); letter-spacing:0.08em; text-transform:uppercase;
+  }
+  .mobile-home-btn {
+    background:none; border:none; font-size:1.2rem; cursor:pointer; padding:0.25rem;
+  }
+  .main {
+    margin-left:0;
+    padding:1.25rem 1rem 5rem;
+    padding-top:calc(4.5rem + env(safe-area-inset-top, 0px));
+  }
+}
