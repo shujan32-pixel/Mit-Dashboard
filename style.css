@@ -482,6 +482,68 @@
 /* Mobile nav skjult på desktop */
 .mobile-nav { display:none; }
 
+/* ── GLOBALT OVERFLOW FIX ───────────────────────────── */
+/* Sikrer ingen elementer kan skubbe siden bredere end skærmen */
+.page, .main { overflow-x:hidden; }
+
+/* ── MOBIL OVERFLOW FIXES (max 768px) ───────────────── */
+@media (max-width:768px) {
+
+  /* Ugevisning — vaner */
+  .week-label { width:80px; font-size:0.65rem; }
+  .week-dot   { width:18px; height:18px; font-size:0.55rem; }
+  .day-header { width:18px; font-size:0.55rem; }
+  .week-dots  { gap:3px; }
+  .day-headers { gap:3px; }
+
+  /* Timer mode-knapper */
+  .timer-modes { flex-wrap:wrap; }
+  .mode-btn { flex:1; text-align:center; font-size:0.68rem; padding:0.4rem 0.5rem; }
+
+  /* Budget tabs */
+  .tab-row { flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:0.5rem; gap:0.4rem; }
+  .tab-row::-webkit-scrollbar { height:2px; }
+  .tab-row::-webkit-scrollbar-track { background:transparent; }
+  .tab-row::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+  .tab-btn { flex-shrink:0; font-size:0.68rem; padding:0.4rem 0.7rem; }
+
+  /* Formular 2-kolonner → 1 kolonne */
+  .form-2col { grid-template-columns:1fr; }
+
+  /* Budget summary (ind/ud/saldo) → 1 kolonne */
+  .budget-summary { grid-template-columns:1fr; }
+
+  /* Dagsoverblik stats → 2 kolonner */
+  .mg-stat-row { flex-wrap:wrap; gap:0.75rem; }
+  .mg-stat { flex:0 0 calc(50% - 0.4rem); }
+  .mg-stat-div { display:none; }
+
+  /* Review — vane søjler */
+  .review-habit-bar-row { grid-template-columns:90px 1fr 36px; gap:0.35rem; }
+  .review-habit-bar-name { font-size:0.65rem; }
+
+  /* Review — ugekreds */
+  .review-week-days { gap:0.2rem; }
+  .review-day-dot { width:24px; height:24px; font-size:0.6rem; }
+
+  /* Vejr — timeoversigt */
+  #weather-forecast {
+    display:flex; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    padding-bottom:0.5rem; gap:0.4rem;
+  }
+  #weather-forecast::-webkit-scrollbar { height:2px; }
+  #weather-forecast::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+  .weather-hour { min-width:46px; padding:0.4rem 0.4rem; }
+  .weather-hour-time { font-size:0.56rem; }
+  .weather-hour-temp { font-size:0.66rem; }
+
+  /* Nyheder — enkeltkolonne på mobil */
+  .news-grid { grid-template-columns:1fr !important; }
+
+  /* Page header knapper */
+  .page-header { flex-wrap:wrap; gap:0.5rem; }
+}
+
 /* MOBIL TOP HEADER */
 .mobile-header { display:none; }
 @media (max-width:768px) {
